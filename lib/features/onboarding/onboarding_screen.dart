@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/constants.dart';
+import '../../core/helper/extension.dart';
+import '../auth/login/login_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -20,6 +22,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   void _onPageChanged(int page) {
     setState(() => _currentPage = page);
+  }
+
+  void _nextPage() {
+    if (_currentPage < 2) {
+      _pageController.nextPage(
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
+      );
+    } else {
+      context.push(const LoginScreen());
+    }
   }
 
   @override
@@ -133,6 +146,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Widget _buildActions() {
+    final isLast = _currentPage == 2;
+
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.containerMargin,
@@ -153,7 +168,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 ],
               ),
               child: ElevatedButton(
-                onPressed: () {},
+                onPressed: _nextPage,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryContainer,
                   foregroundColor: AppColors.onPrimaryContainer,
@@ -166,14 +181,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   shadowColor: WidgetStateProperty.all(Colors.transparent),
                   surfaceTintColor: WidgetStateProperty.all(Colors.transparent),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'ابدأ رحلتك',
+                      isLast ? 'ابدأ' : 'التالي',
                       style: AppTypography.headlineMD,
                     ),
-                    SizedBox(width: 8),
+                    const SizedBox(width: 8),
                     Icon(Icons.arrow_back_rounded, size: 20),
                   ],
                 ),
@@ -184,7 +199,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           SizedBox(
             width: double.infinity,
             child: TextButton(
-              onPressed: () {},
+              onPressed: () => context.push(const LoginScreen()),
               style: TextButton.styleFrom(
                 foregroundColor: AppColors.primary,
                 padding: const EdgeInsets.symmetric(vertical: 16),
