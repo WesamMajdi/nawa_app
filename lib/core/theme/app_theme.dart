@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../constants/constants.dart';
 
 class AppTheme {
@@ -35,15 +34,13 @@ class AppTheme {
         inversePrimary: AppColors.inversePrimary,
       ),
       scaffoldBackgroundColor: AppColors.background,
-      textTheme: GoogleFonts.ibmPlexSansArabicTextTheme(
-        ThemeData.dark().textTheme.copyWith(
-              headlineLarge: AppTypography.headlineXL,
-              headlineMedium: AppTypography.headlineLG,
-              headlineSmall: AppTypography.headlineMD,
-              bodyLarge: AppTypography.bodyLG,
-              bodyMedium: AppTypography.bodyMD,
-              labelMedium: AppTypography.labelMD,
-            ),
+      textTheme: const TextTheme(
+        headlineLarge: AppTypography.headlineXL,
+        headlineMedium: AppTypography.headlineLG,
+        headlineSmall: AppTypography.headlineMD,
+        bodyLarge: AppTypography.bodyLG,
+        bodyMedium: AppTypography.bodyMD,
+        labelMedium: AppTypography.labelMD,
       ),
     );
   }
