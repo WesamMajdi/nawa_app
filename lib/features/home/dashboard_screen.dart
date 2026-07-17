@@ -75,8 +75,6 @@ class _GreetingHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        _StreakCounter(),
-        const SizedBox(width: AppSpacing.stackSM),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -94,6 +92,8 @@ class _GreetingHeader extends StatelessWidget {
             ],
           ),
         ),
+        const SizedBox(width: AppSpacing.stackSM),
+        _StreakCounter(),
       ],
     );
   }
