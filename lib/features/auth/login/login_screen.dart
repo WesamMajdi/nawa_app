@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/constants.dart';
+import '../../../core/helper/extension.dart';
 import '../widgets/auth_field.dart';
 import '../widgets/auth_button.dart';
 import '../widgets/auth_divider.dart';
 import '../widgets/social_button.dart';
+import '../signup/signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -26,9 +28,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _goToSignup() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('التسجيل قريباً')),
-    );
+    context.push(const SignupScreen());
   }
 
   @override
