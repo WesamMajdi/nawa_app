@@ -15,6 +15,10 @@ class NawahApp extends StatelessWidget {
       title: 'نواة',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.dark,
+      builder: (context, child) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: child!,
+      ),
       home: const OnboardingScreen(),
     );
   }
