@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/constants.dart';
-import '../../core/helper/extension.dart';
-import '../auth/login/login_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -31,7 +29,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         curve: Curves.easeInOut,
       );
     } else {
-      context.push(const LoginScreen());
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('جاري الإعداد...')),
+      );
     }
   }
 
@@ -199,7 +199,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           SizedBox(
             width: double.infinity,
             child: TextButton(
-              onPressed: () => context.push(const LoginScreen()),
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('جاري الإعداد...')),
+                );
+              },
               style: TextButton.styleFrom(
                 foregroundColor: AppColors.primary,
                 padding: const EdgeInsets.symmetric(vertical: 16),
