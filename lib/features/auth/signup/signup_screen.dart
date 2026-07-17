@@ -112,6 +112,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 label: 'الاسم الكامل',
                 hint: 'أحمد محمد',
                 prefixIcon: Icons.person_outline_rounded,
+                controller: _nameController,
               ),
               const SizedBox(height: AppSpacing.stackMD),
               AuthField(
@@ -120,6 +121,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 prefixIcon: Icons.mail_outline_rounded,
                 keyboardType: TextInputType.emailAddress,
                 textDirection: TextDirection.ltr,
+                controller: _emailController,
               ),
               const SizedBox(height: AppSpacing.stackMD),
               AuthField(
@@ -127,6 +129,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 prefixIcon: Icons.lock_outline_rounded,
                 obscure: _obscurePassword,
                 textDirection: TextDirection.ltr,
+                controller: _passwordController,
                 suffix: IconButton(
                   icon: Icon(
                     _obscurePassword
@@ -148,6 +151,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 prefixIcon: Icons.lock_outline_rounded,
                 obscure: _obscureConfirm,
                 textDirection: TextDirection.ltr,
+                controller: _confirmPasswordController,
                 suffix: IconButton(
                   icon: Icon(
                     _obscureConfirm

@@ -125,6 +125,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 prefixIcon: Icons.mail_outline_rounded,
                 keyboardType: TextInputType.emailAddress,
                 textDirection: TextDirection.ltr,
+                controller: _emailController,
               ),
               const SizedBox(height: AppSpacing.stackMD),
               AuthField(
@@ -132,6 +133,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 prefixIcon: Icons.lock_outline_rounded,
                 obscure: _obscurePassword,
                 textDirection: TextDirection.ltr,
+                controller: _passwordController,
                 suffix: IconButton(
                   icon: Icon(
                     _obscurePassword
