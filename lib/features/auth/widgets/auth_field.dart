@@ -9,6 +9,7 @@ class AuthField extends StatelessWidget {
   final bool obscure;
   final TextInputType? keyboardType;
   final TextDirection? textDirection;
+  final TextEditingController? controller;
 
   const AuthField({
     super.key,
@@ -19,6 +20,7 @@ class AuthField extends StatelessWidget {
     this.obscure = false,
     this.keyboardType,
     this.textDirection,
+    this.controller,
   });
 
   @override
@@ -69,6 +71,7 @@ class AuthField extends StatelessWidget {
                     ),
                     Expanded(
                       child: TextField(
+                        controller: controller,
                         obscureText: obscure,
                         keyboardType: keyboardType,
                         textDirection: textDirection,
