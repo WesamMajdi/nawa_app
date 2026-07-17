@@ -17,10 +17,8 @@ class SocialButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: double.infinity,
-      child: OutlinedButton.icon(
+      child: OutlinedButton(
         onPressed: onPressed,
-        icon: icon,
-        label: Text(label),
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.onSurface,
           side: const BorderSide(color: AppColors.outlineVariant),
@@ -32,6 +30,15 @@ class SocialButton extends StatelessWidget {
           textStyle: AppTypography.labelMD,
         ).copyWith(
           overlayColor: WidgetStateProperty.all(AppColors.surfaceVariant),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          textDirection: TextDirection.ltr,
+          children: [
+            icon,
+            const SizedBox(width: 8),
+            Text(label),
+          ],
         ),
       ),
     );
