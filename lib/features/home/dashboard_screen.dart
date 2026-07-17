@@ -111,15 +111,16 @@ class _StreakCounter extends StatelessWidget {
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
+        textDirection: TextDirection.ltr,
         children: [
+          _PulsingFire(),
+          const SizedBox(width: 6),
           Text(
             '12',
             style: AppTypography.headlineMD.copyWith(
               color: AppColors.primary,
             ),
           ),
-          const SizedBox(width: 6),
-          _PulsingFire(),
         ],
       ),
     );
@@ -179,7 +180,7 @@ class _PulsingFireState extends State<_PulsingFire>
         ),
         child: Icon(
           Icons.local_fire_department_rounded,
-          color: AppColors.primary,
+          color: const Color(0xFFFF6B35),
           size: 24,
         ),
       ),
