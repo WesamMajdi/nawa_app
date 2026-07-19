@@ -6,6 +6,7 @@ import '../widgets/auth_button.dart';
 import '../widgets/auth_divider.dart';
 import '../widgets/social_button.dart';
 import '../signup/signup_screen.dart';
+import '../../home/dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -29,6 +30,19 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _goToSignup() {
     context.push(const SignupScreen());
+  }
+
+  void _login() {
+    final username = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    if (username == '1' && password == '1') {
+      context.pushAndRemoveUntil(const DashboardScreen());
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('اسم المستخدم أو كلمة المرور غير صحيحة')),
+      );
+    }
   }
 
   @override
@@ -110,14 +124,14 @@ class _LoginScreenState extends State<LoginScreen> {
                 hint: 'developer@example.com',
                 prefixIcon: Icons.mail_outline_rounded,
                 keyboardType: TextInputType.emailAddress,
-                textDirection: TextDirection.ltr,
+                controller: _emailController,
               ),
               const SizedBox(height: AppSpacing.stackMD),
               AuthField(
                 label: 'كلمة المرور',
                 prefixIcon: Icons.lock_outline_rounded,
                 obscure: _obscurePassword,
-                textDirection: TextDirection.ltr,
+                controller: _passwordController,
                 suffix: IconButton(
                   icon: Icon(
                     _obscurePassword
@@ -135,7 +149,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: AppSpacing.stackSM),
               Align(
-                alignment: Alignment.centerLeft,
+                alignment: AlignmentDirectional.centerStart,
                 child: TextButton(
                   onPressed: () {},
                   child: Text(
@@ -149,7 +163,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: AppSpacing.stackSM),
               AuthButton(
                 label: 'تسجيل الدخول',
-                onPressed: () {},
+                onPressed: _login,
               ),
               const SizedBox(height: AppSpacing.stackMD),
               Row(

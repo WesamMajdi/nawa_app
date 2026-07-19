@@ -8,7 +8,7 @@ class AuthField extends StatelessWidget {
   final Widget? suffix;
   final bool obscure;
   final TextInputType? keyboardType;
-  final TextDirection? textDirection;
+  final TextEditingController? controller;
 
   const AuthField({
     super.key,
@@ -18,7 +18,7 @@ class AuthField extends StatelessWidget {
     this.suffix,
     this.obscure = false,
     this.keyboardType,
-    this.textDirection,
+    this.controller,
   });
 
   @override
@@ -60,7 +60,7 @@ class AuthField extends StatelessWidget {
                 child: Row(
                   children: [
                     Padding(
-                      padding: const EdgeInsets.only(right: 12),
+                      padding: const EdgeInsetsDirectional.only(end: 12),
                       child: Icon(
                         prefixIcon,
                         color: AppColors.onSurfaceVariant,
@@ -69,9 +69,9 @@ class AuthField extends StatelessWidget {
                     ),
                     Expanded(
                       child: TextField(
+                        controller: controller,
                         obscureText: obscure,
                         keyboardType: keyboardType,
-                        textDirection: textDirection,
                         style: AppTypography.codeSM.copyWith(
                           color: AppColors.onSurface,
                         ),
@@ -90,7 +90,7 @@ class AuthField extends StatelessWidget {
                       ),
                     ),
                     if (suffix != null) Padding(
-                      padding: const EdgeInsets.only(left: 8),
+                      padding: const EdgeInsetsDirectional.only(start: 8),
                       child: suffix,
                     ),
                     const SizedBox(width: 12),
