@@ -490,14 +490,17 @@ class _RecentStudents extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 16),
-        Row(
-          children: [
-            _Avatar(icon: Icons.person),
-            _Avatar(icon: Icons.person, offset: true),
-            _Avatar(icon: Icons.person, offset: true),
-            _Avatar(icon: Icons.person, offset: true),
-            _AvatarOverflow(),
-          ],
+        SizedBox(
+          height: 40,
+          child: Stack(
+            children: [
+              Positioned(right: 0, child: const _Avatar(icon: Icons.person)),
+              Positioned(right: 16, child: const _Avatar(icon: Icons.person)),
+              Positioned(right: 32, child: const _Avatar(icon: Icons.person)),
+              Positioned(right: 48, child: const _Avatar(icon: Icons.person)),
+              Positioned(right: 64, child: const _AvatarOverflow()),
+            ],
+          ),
         ),
       ],
     );
@@ -506,16 +509,14 @@ class _RecentStudents extends StatelessWidget {
 
 class _Avatar extends StatelessWidget {
   final IconData icon;
-  final bool offset;
 
-  const _Avatar({required this.icon, this.offset = false});
+  const _Avatar({required this.icon});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: 40,
       height: 40,
-      margin: offset ? const EdgeInsets.only(right: -16) : null,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: AppColors.surfaceVariant,
@@ -527,12 +528,13 @@ class _Avatar extends StatelessWidget {
 }
 
 class _AvatarOverflow extends StatelessWidget {
+  const _AvatarOverflow();
+
   @override
   Widget build(BuildContext context) {
     return Container(
       width: 40,
       height: 40,
-      margin: const EdgeInsets.only(right: -16),
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: AppColors.primary.withAlpha(51),
