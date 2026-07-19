@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/constants.dart';
+import '../../core/helper/extension.dart';
+import '../home/dashboard_screen.dart';
 
 class ExploreScreen extends StatelessWidget {
   const ExploreScreen({super.key});
@@ -381,7 +383,7 @@ class _BottomNav extends StatelessWidget {
                     icon: Icons.home_rounded,
                     label: 'الرئيسية',
                     isActive: false,
-                    onTap: () {},
+                    onTap: () => context.pushAndRemoveUntil(const DashboardScreen()),
                   ),
                 ],
               ),

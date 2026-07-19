@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/constants.dart';
+import '../../core/helper/extension.dart';
+import '../explore/explore_screen.dart';
 import 'widgets/progress_ring.dart';
 
 class DashboardScreen extends StatelessWidget {
@@ -450,7 +452,7 @@ class _BottomNav extends StatelessWidget {
                     icon: Icons.search,
                     label: 'الاستكشاف',
                     isActive: false,
-                    onTap: () {},
+                    onTap: () => context.push(const ExploreScreen()),
                   ),
                   _NavItem(
                     icon: Icons.home_rounded,
