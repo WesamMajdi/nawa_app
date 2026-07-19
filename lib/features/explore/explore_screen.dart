@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/constants.dart';
+import '../../core/helper/extension.dart';
+import '../path_details/path_details_screen.dart';
 
 class ExploreScreen extends StatelessWidget {
   const ExploreScreen({super.key});
@@ -223,13 +225,15 @@ class _CourseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E1C29),
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        border: Border.all(color: AppColors.onSurfaceVariant.withAlpha(25)),
-      ),
-      child: Column(
+    return GestureDetector(
+      onTap: () => context.push(const PathDetailsScreen()),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E1C29),
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          border: Border.all(color: AppColors.onSurfaceVariant.withAlpha(25)),
+        ),
+        child: Column(
         children: [
           ClipRRect(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
@@ -317,7 +321,8 @@ class _CourseCard extends StatelessWidget {
           ),
         ],
       ),
-    );
+    ),
+  );
   }
 }
 
