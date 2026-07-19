@@ -357,76 +357,82 @@ class _Module extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(right: 40),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(AppRadius.xl),
-          border: isUnlocked
-              ? Border(
-                  right: BorderSide(color: AppColors.primary.withAlpha(128), width: 4),
-                  top: BorderSide(color: AppColors.onSurfaceVariant.withAlpha(25)),
-                  bottom: BorderSide(color: AppColors.onSurfaceVariant.withAlpha(25)),
-                  left: BorderSide(color: AppColors.onSurfaceVariant.withAlpha(25)),
-                )
-              : Border.all(color: AppColors.surfaceVariant),
-          gradient: isUnlocked
-              ? LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    AppColors.primary.withAlpha(12),
-                    Colors.transparent,
-                  ],
-                )
-              : null,
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            border: Border.all(color: AppColors.surfaceVariant),
+            gradient: isUnlocked
+                ? LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      AppColors.primary.withAlpha(12),
+                      Colors.transparent,
+                    ],
+                  )
+                : null,
+          ),
+          child: Stack(
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: AppTypography.headlineMD.copyWith(
-                        color: AppColors.onSurface,
-                      ),
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: isUnlocked
-                          ? AppColors.primary.withAlpha(25)
-                          : AppColors.surfaceVariant,
-                      borderRadius: BorderRadius.circular(AppRadius.sm),
-                    ),
-                    child: Text(
-                      isUnlocked ? 'مفتوح' : 'مغلق',
-                      style: AppTypography.labelMD.copyWith(
-                        color: isUnlocked ? AppColors.primary : AppColors.onSurfaceVariant,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                description,
-                style: AppTypography.bodyMD.copyWith(
-                  color: AppColors.onSurfaceVariant,
-                  fontSize: 14,
+              if (isUnlocked)
+                Positioned(
+                  right: 0,
+                  top: 0,
+                  bottom: 0,
+                  child: Container(width: 4, color: AppColors.primary.withAlpha(128)),
                 ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  _ModuleMeta(Icons.play_circle, lessons),
-                  const SizedBox(width: 16),
-                  _ModuleMeta(Icons.assignment, exercise),
-                ],
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            title,
+                            style: AppTypography.headlineMD.copyWith(
+                              color: AppColors.onSurface,
+                            ),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: isUnlocked
+                                ? AppColors.primary.withAlpha(25)
+                                : AppColors.surfaceVariant,
+                            borderRadius: BorderRadius.circular(AppRadius.sm),
+                          ),
+                          child: Text(
+                            isUnlocked ? 'مفتوح' : 'مغلق',
+                            style: AppTypography.labelMD.copyWith(
+                              color: isUnlocked ? AppColors.primary : AppColors.onSurfaceVariant,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      description,
+                      style: AppTypography.bodyMD.copyWith(
+                        color: AppColors.onSurfaceVariant,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        _ModuleMeta(Icons.play_circle, lessons),
+                        const SizedBox(width: 16),
+                        _ModuleMeta(Icons.assignment, exercise),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
