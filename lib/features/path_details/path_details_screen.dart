@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/constants.dart';
+import '../../core/helper/extension.dart';
+import '../registration_confirmation/registration_confirmation_screen.dart';
 
 class PathDetailsScreen extends StatelessWidget {
   const PathDetailsScreen({super.key});
@@ -596,7 +598,7 @@ class _BottomCTA extends StatelessWidget {
               SizedBox(
                 width: 200,
                 child: ElevatedButton(
-                  onPressed: () {},
+                  onPressed: () => context.push(const RegistrationConfirmationScreen()),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: const Color(0xFF15141B),
