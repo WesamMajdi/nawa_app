@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nawa_flutter/features/lesson_viewing/lesson_viewing_screen.dart';
 import '../../core/constants/constants.dart';
 import '../../core/helper/extension.dart';
 import '../explore/explore_screen.dart';
@@ -11,12 +12,7 @@ class DashboardScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: Stack(
-          children: [
-            _buildBody(),
-            const _BottomNav(),
-          ],
-        ),
+        child: Stack(children: [_buildBody(), const _BottomNav()]),
       ),
     );
   }
@@ -87,10 +83,7 @@ class _GreetingHeader extends StatelessWidget {
                   color: AppColors.onSurfaceVariant,
                 ),
               ),
-              Text(
-                'أهلاً بك، أحمد',
-                style: AppTypography.headlineXL,
-              ),
+              Text('أهلاً بك، أحمد', style: AppTypography.headlineXL),
             ],
           ),
         ),
@@ -119,9 +112,7 @@ class _StreakCounter extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             '12',
-            style: AppTypography.headlineMD.copyWith(
-              color: AppColors.primary,
-            ),
+            style: AppTypography.headlineMD.copyWith(color: AppColors.primary),
           ),
         ],
       ),
@@ -146,9 +137,10 @@ class _PulsingFireState extends State<_PulsingFire>
       vsync: this,
       duration: const Duration(seconds: 2),
     )..repeat(reverse: true);
-    _animation = Tween<double>(begin: 0.95, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _animation = Tween<double>(
+      begin: 0.95,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -162,10 +154,7 @@ class _PulsingFireState extends State<_PulsingFire>
     return AnimatedBuilder(
       animation: _animation,
       builder: (context, child) {
-        return Transform.scale(
-          scale: _animation.value,
-          child: child,
-        );
+        return Transform.scale(scale: _animation.value, child: child);
       },
       child: Container(
         width: 32,
@@ -202,10 +191,7 @@ class _CurrentPathCard extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Colors.white.withAlpha(12),
-            Colors.white.withAlpha(0),
-          ],
+          colors: [Colors.white.withAlpha(12), Colors.white.withAlpha(0)],
         ),
         boxShadow: [
           BoxShadow(
@@ -248,10 +234,7 @@ class _CurrentPathCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: AppSpacing.stackSM),
-            Text(
-              'تطوير تطبيقات Flutter',
-              style: AppTypography.headlineLG,
-            ),
+            Text('تطوير تطبيقات Flutter', style: AppTypography.headlineLG),
             const SizedBox(height: AppSpacing.stackSM),
             Text(
               'تعلم كيفية بناء واجهات مستخدم معقدة وإدارة حالة التطبيق باستخدام Provider.',
@@ -265,20 +248,25 @@ class _CurrentPathCard extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {},
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: AppColors.surfaceContainerLowest,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.lg),
-                  ),
-                  elevation: 0,
-                  textStyle: AppTypography.headlineMD,
-                ).copyWith(
-                  shadowColor: WidgetStateProperty.all(Colors.transparent),
-                  surfaceTintColor: WidgetStateProperty.all(Colors.transparent),
-                ),
+                onPressed: () {
+                  context.push(LessonViewingScreen());
+                },
+                style:
+                    ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: AppColors.surfaceContainerLowest,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.lg),
+                      ),
+                      elevation: 0,
+                      textStyle: AppTypography.headlineMD,
+                    ).copyWith(
+                      shadowColor: WidgetStateProperty.all(Colors.transparent),
+                      surfaceTintColor: WidgetStateProperty.all(
+                        Colors.transparent,
+                      ),
+                    ),
                 child: const Text('أكمل التعلم'),
               ),
             ),
@@ -298,19 +286,23 @@ class _StatsGrid extends StatelessWidget {
       children: [
         Row(
           children: [
-            Expanded(child: _StatCard(
-              icon: Icons.star_rounded,
-              iconColor: AppColors.primary,
-              label: 'نقاط الخبرة',
-              value: '2,450 XP',
-            )),
+            Expanded(
+              child: _StatCard(
+                icon: Icons.star_rounded,
+                iconColor: AppColors.primary,
+                label: 'نقاط الخبرة',
+                value: '2,450 XP',
+              ),
+            ),
             SizedBox(width: AppSpacing.gutter),
-            Expanded(child: _StatCard(
-              icon: Icons.task_alt_rounded,
-              iconColor: AppColors.secondary,
-              label: 'الدروس المكتملة',
-              value: '48',
-            )),
+            Expanded(
+              child: _StatCard(
+                icon: Icons.task_alt_rounded,
+                iconColor: AppColors.secondary,
+                label: 'الدروس المكتملة',
+                value: '48',
+              ),
+            ),
           ],
         ),
         SizedBox(height: AppSpacing.gutter),
@@ -318,12 +310,14 @@ class _StatsGrid extends StatelessWidget {
           children: [
             Expanded(child: SizedBox.shrink()),
             SizedBox(width: AppSpacing.gutter),
-            Expanded(child: _StatCard(
-              icon: Icons.emoji_events_rounded,
-              iconColor: AppColors.tertiary,
-              label: 'التحديات الفائزة',
-              value: '7',
-            )),
+            Expanded(
+              child: _StatCard(
+                icon: Icons.emoji_events_rounded,
+                iconColor: AppColors.tertiary,
+                label: 'التحديات الفائزة',
+                value: '7',
+              ),
+            ),
           ],
         ),
       ],
@@ -353,10 +347,7 @@ class _StatCard extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Colors.white.withAlpha(12),
-            Colors.white.withAlpha(0),
-          ],
+          colors: [Colors.white.withAlpha(12), Colors.white.withAlpha(0)],
         ),
       ),
       child: Padding(
@@ -374,10 +365,7 @@ class _StatCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    value,
-                    style: AppTypography.headlineLG,
-                  ),
+                  Text(value, style: AppTypography.headlineLG),
                 ],
               ),
             ),
@@ -503,8 +491,9 @@ class _NavItem extends StatelessWidget {
                 fontFamily: AppTypography.fontArabic,
                 fontSize: 10,
                 fontWeight: FontWeight.w500,
-                color:
-                    isActive ? AppColors.primary : AppColors.onSurfaceVariant,
+                color: isActive
+                    ? AppColors.primary
+                    : AppColors.onSurfaceVariant,
               ),
             ),
             if (isActive)

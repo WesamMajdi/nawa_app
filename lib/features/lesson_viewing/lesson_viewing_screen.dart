@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:nawa_flutter/core/helper/extension.dart';
+import 'package:nawa_flutter/features/home/dashboard_screen.dart';
 import '../../core/constants/constants.dart';
 
 class LessonViewingScreen extends StatelessWidget {
@@ -31,7 +33,9 @@ class _TopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.containerMargin),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.containerMargin,
+      ),
       height: 64,
       decoration: BoxDecoration(
         color: AppColors.background.withAlpha(204),
@@ -43,7 +47,7 @@ class _TopBar extends StatelessWidget {
         children: [
           IconButton(
             icon: const Icon(Icons.arrow_forward, color: AppColors.onSurface),
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => context.push(DashboardScreen()),
           ),
           Expanded(
             child: Padding(
@@ -161,10 +165,7 @@ class _VideoControls extends StatelessWidget {
                       ),
                     ),
                   ),
-                  Expanded(
-                    flex: 55,
-                    child: Container(),
-                  ),
+                  Expanded(flex: 55, child: Container()),
                 ],
               ),
             ),
@@ -215,7 +216,10 @@ class _LessonHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.primaryContainer.withAlpha(51),
                     borderRadius: BorderRadius.circular(AppRadius.md),
@@ -359,9 +363,7 @@ class _LessonList extends StatelessWidget {
   static void _navigateToLesson(BuildContext context, String title) {
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(
-        builder: (_) => const LessonViewingScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => const LessonViewingScreen()),
     );
   }
 
@@ -394,7 +396,10 @@ class _LessonList extends StatelessWidget {
               ),
               const Spacer(),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.surfaceVariant,
                   borderRadius: BorderRadius.circular(AppRadius.full),
@@ -418,7 +423,10 @@ class _LessonList extends StatelessWidget {
             iconBorder: AppColors.primary.withAlpha(51),
             title: 'مراجعة سريعة للمتغيرات والنطاق (Scope)',
             duration: '08:45',
-            onTap: () => _navigateToLesson(context, 'مراجعة سريعة للمتغيرات والنطاق (Scope)'),
+            onTap: () => _navigateToLesson(
+              context,
+              'مراجعة سريعة للمتغيرات والنطاق (Scope)',
+            ),
           ),
           const SizedBox(height: AppSpacing.gutter),
           _LessonCard(
@@ -428,11 +436,15 @@ class _LessonList extends StatelessWidget {
             iconBorder: AppColors.primary.withAlpha(51),
             title: 'مفهوم عدم التزامن (Asynchrony)',
             duration: '15:20',
-            onTap: () => _navigateToLesson(context, 'مفهوم عدم التزامن (Asynchrony)'),
+            onTap: () =>
+                _navigateToLesson(context, 'مفهوم عدم التزامن (Asynchrony)'),
           ),
           const SizedBox(height: AppSpacing.gutter),
           _ActiveLessonCard(
-            onTap: () => _navigateToLesson(context, 'التعامل مع الوعود (Promises) في جافاسكربت'),
+            onTap: () => _navigateToLesson(
+              context,
+              'التعامل مع الوعود (Promises) في جافاسكربت',
+            ),
           ),
           const SizedBox(height: AppSpacing.gutter),
           _LockedLessonCard(
@@ -479,56 +491,60 @@ class _LessonCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        color: AppColors.surfaceVariant.withAlpha(102),
-        border: Border.all(color: AppColors.onSurfaceVariant.withAlpha(25)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: iconBg,
-              border: Border.all(color: iconBorder),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          color: AppColors.surfaceVariant.withAlpha(102),
+          border: Border.all(color: AppColors.onSurfaceVariant.withAlpha(25)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: iconBg,
+                border: Border.all(color: iconBorder),
+              ),
+              child: Icon(icon, color: iconColor, size: 20),
             ),
-            child: Icon(icon, color: iconColor, size: 20),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: AppTypography.bodyMD.copyWith(
-                    color: AppColors.onSurface,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    const Icon(Icons.play_circle, size: 16, color: AppColors.onSurfaceVariant),
-                    const SizedBox(width: 4),
-                    Text(
-                      duration,
-                      style: AppTypography.labelMD.copyWith(
-                        color: AppColors.onSurfaceVariant,
-                        fontSize: 12,
-                        fontFamily: AppTypography.fontMono,
-                      ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: AppTypography.bodyMD.copyWith(
+                      color: AppColors.onSurface,
                     ),
-                  ],
-                ),
-              ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.play_circle,
+                        size: 16,
+                        color: AppColors.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        duration,
+                        style: AppTypography.labelMD.copyWith(
+                          color: AppColors.onSurfaceVariant,
+                          fontSize: 12,
+                          fontFamily: AppTypography.fontMono,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
     );
   }
 }
@@ -543,107 +559,113 @@ class _ActiveLessonCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        color: AppColors.surfaceContainer,
-        border: Border.all(color: AppColors.primary.withAlpha(77)),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withAlpha(20),
-            blurRadius: 24,
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            right: 0,
-            top: 0,
-            bottom: 0,
-            child: Container(
-              width: 4,
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withAlpha(128),
-                    blurRadius: 12,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          color: AppColors.surfaceContainer,
+          border: Border.all(color: AppColors.primary.withAlpha(77)),
+          boxShadow: [
+            BoxShadow(color: AppColors.primary.withAlpha(20), blurRadius: 24),
+          ],
+        ),
+        child: Stack(
+          children: [
+            Positioned(
+              right: 0,
+              top: 0,
+              bottom: 0,
+              child: Container(
+                width: 4,
+                decoration: BoxDecoration(
                   color: AppColors.primary,
-                ),
-                child: const Icon(Icons.play_arrow, color: AppColors.onPrimary, size: 20),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'التعامل مع الوعود (Promises) في جافاسكربت',
-                      style: AppTypography.headlineMD.copyWith(
-                        color: AppColors.primary,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withAlpha(25),
-                            borderRadius: BorderRadius.circular(AppRadius.sm),
-                            border: Border.all(color: AppColors.primary.withAlpha(51)),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.graphic_eq,
-                                size: 14,
-                                color: AppColors.primary,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                'يتم التشغيل الآن',
-                                style: AppTypography.labelMD.copyWith(
-                                  color: AppColors.primary,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          '12:30',
-                          style: AppTypography.labelMD.copyWith(
-                            color: AppColors.primary.withAlpha(204),
-                            fontSize: 12,
-                            fontFamily: AppTypography.fontMono,
-                          ),
-                        ),
-                      ],
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withAlpha(128),
+                      blurRadius: 12,
                     ),
                   ],
                 ),
               ),
-            ],
-          ),
-        ],
+            ),
+            Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppColors.primary,
+                  ),
+                  child: const Icon(
+                    Icons.play_arrow,
+                    color: AppColors.onPrimary,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'التعامل مع الوعود (Promises) في جافاسكربت',
+                        style: AppTypography.headlineMD.copyWith(
+                          color: AppColors.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withAlpha(25),
+                              borderRadius: BorderRadius.circular(AppRadius.sm),
+                              border: Border.all(
+                                color: AppColors.primary.withAlpha(51),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.graphic_eq,
+                                  size: 14,
+                                  color: AppColors.primary,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'يتم التشغيل الآن',
+                                  style: AppTypography.labelMD.copyWith(
+                                    color: AppColors.primary,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            '12:30',
+                            style: AppTypography.labelMD.copyWith(
+                              color: AppColors.primary.withAlpha(204),
+                              fontSize: 12,
+                              fontFamily: AppTypography.fontMono,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
-    ),
     );
   }
 }
@@ -668,66 +690,66 @@ class _LockedLessonCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        border: Border.all(color: AppColors.outlineVariant.withAlpha(25)),
-        color: AppColors.surfaceContainerLowest,
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: isSquare
-                ? BoxDecoration(
-                    borderRadius: BorderRadius.circular(AppRadius.lg),
-                    border: Border.all(color: AppColors.outlineVariant),
-                    color: AppColors.surfaceVariant.withAlpha(77),
-                  )
-                : BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.outlineVariant),
-                  ),
-            child: Icon(icon, color: AppColors.onSurfaceVariant, size: 20),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: AppTypography.bodyMD.copyWith(
-                    color: AppColors.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Icon(
-                      isSquare ? Icons.task : Icons.schedule,
-                      size: 16,
-                      color: AppColors.outline,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          border: Border.all(color: AppColors.outlineVariant.withAlpha(25)),
+          color: AppColors.surfaceContainerLowest,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: isSquare
+                  ? BoxDecoration(
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
+                      border: Border.all(color: AppColors.outlineVariant),
+                      color: AppColors.surfaceVariant.withAlpha(77),
+                    )
+                  : BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.outlineVariant),
                     ),
-                    const SizedBox(width: 4),
-                    Text(
-                      duration,
-                      style: AppTypography.labelMD.copyWith(
-                        color: AppColors.outline,
-                        fontSize: 12,
-                        fontFamily: !isSquare ? AppTypography.fontMono : null,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+              child: Icon(icon, color: AppColors.onSurfaceVariant, size: 20),
             ),
-          ),
-        ],
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: AppTypography.bodyMD.copyWith(
+                      color: AppColors.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(
+                        isSquare ? Icons.task : Icons.schedule,
+                        size: 16,
+                        color: AppColors.outline,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        duration,
+                        style: AppTypography.labelMD.copyWith(
+                          color: AppColors.outline,
+                          fontSize: 12,
+                          fontFamily: !isSquare ? AppTypography.fontMono : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        // Override opacity via the Opacity wrapper
       ),
-      // Override opacity via the Opacity wrapper
-    ),
     );
   }
 }
@@ -743,7 +765,9 @@ class _BottomBar extends StatelessWidget {
         padding: const EdgeInsets.all(AppSpacing.containerMargin),
         decoration: BoxDecoration(
           color: AppColors.surfaceVariant.withAlpha(102),
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(AppRadius.xl),
+          ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withAlpha(128),
@@ -777,18 +801,23 @@ class _BottomBar extends StatelessWidget {
                     onPressed: () {
                       _LessonList._navigateToLesson(context, 'الدرس التالي');
                     },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: AppColors.onPrimary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.xl),
-                      ),
-                      elevation: 0,
-                      textStyle: AppTypography.headlineMD,
-                    ).copyWith(
-                      shadowColor: WidgetStateProperty.all(Colors.transparent),
-                      surfaceTintColor: WidgetStateProperty.all(Colors.transparent),
-                    ),
+                    style:
+                        ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: AppColors.onPrimary,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppRadius.xl),
+                          ),
+                          elevation: 0,
+                          textStyle: AppTypography.headlineMD,
+                        ).copyWith(
+                          shadowColor: WidgetStateProperty.all(
+                            Colors.transparent,
+                          ),
+                          surfaceTintColor: WidgetStateProperty.all(
+                            Colors.transparent,
+                          ),
+                        ),
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
