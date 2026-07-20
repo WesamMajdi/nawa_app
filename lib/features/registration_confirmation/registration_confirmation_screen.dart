@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import '../../core/constants/constants.dart';
+import '../lesson_viewing/lesson_viewing_screen.dart';
 
 class RegistrationConfirmationScreen extends StatefulWidget {
   const RegistrationConfirmationScreen({super.key});
@@ -507,7 +508,14 @@ class _RegistrationConfirmationScreenState
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const LessonViewingScreen(),
+                      ),
+                    );
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: AppColors.onPrimary,
