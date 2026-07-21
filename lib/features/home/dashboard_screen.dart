@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nawa_flutter/features/lesson_viewing/lesson_viewing_screen.dart';
+import 'package:nawa_flutter/features/community/community_screen.dart';
 import '../../core/constants/constants.dart';
 import '../../core/helper/extension.dart';
 import '../explore/explore_screen.dart';
@@ -434,7 +435,7 @@ class _BottomNav extends StatelessWidget {
                     icon: Icons.groups_outlined,
                     label: 'المجتمع',
                     isActive: false,
-                    onTap: () {},
+                    onTap: () => context.push(const CommunityScreen()),
                   ),
                   _NavItem(
                     icon: Icons.search,

@@ -3,6 +3,7 @@ import '../../core/constants/constants.dart';
 import '../../core/helper/extension.dart';
 import '../path_details/path_details_screen.dart';
 import '../home/dashboard_screen.dart';
+import '../community/community_screen.dart';
 
 class ExploreScreen extends StatelessWidget {
   const ExploreScreen({super.key});
@@ -375,7 +376,7 @@ class _BottomNav extends StatelessWidget {
                     icon: Icons.groups_outlined,
                     label: 'المجتمع',
                     isActive: false,
-                    onTap: () {},
+                    onTap: () => context.push(const CommunityScreen()),
                   ),
                   _NavItem(
                     icon: Icons.search,
