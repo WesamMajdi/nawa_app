@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'core/theme/app_theme.dart';
+import 'features/notifications/notifications_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -7,13 +9,13 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(colorScheme: .fromSeed(seedColor: Colors.deepPurple)),
-      home: const Material(),
+      title: 'نواة',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.dark,
+      home: const NotificationsScreen(),
     );
   }
 }
