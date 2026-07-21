@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/constants.dart';
+import '../notifications/notifications_screen.dart';
 
 class CommunityScreen extends StatelessWidget {
   const CommunityScreen({super.key});
@@ -80,7 +81,7 @@ class _TopBar extends StatelessWidget {
           ),
           const Spacer(),
           GestureDetector(
-            onTap: () {},
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen())),
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(

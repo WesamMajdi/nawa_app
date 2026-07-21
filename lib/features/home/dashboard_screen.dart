@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:nawa_flutter/features/lesson_viewing/lesson_viewing_screen.dart';
 import 'package:nawa_flutter/features/community/community_screen.dart';
+import 'package:nawa_flutter/features/notifications/notifications_screen.dart';
 import '../../core/constants/constants.dart';
 import '../../core/helper/extension.dart';
 import '../explore/explore_screen.dart';
@@ -49,7 +50,7 @@ class _TopBar extends StatelessWidget {
         IconButton(
           icon: const Icon(Icons.notifications_outlined),
           color: AppColors.onSurface,
-          onPressed: () {},
+          onPressed: () => context.push(const NotificationsScreen()),
         ),
         const Spacer(),
         Text(
