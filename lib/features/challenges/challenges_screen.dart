@@ -29,10 +29,13 @@ class ChallengesScreen extends StatelessWidget {
           ),
           const _TopBar(),
           const AppBottomNav(currentTab: NavTab.challenges),
+          Positioned(
+            bottom: 100,
+            left: AppSpacing.containerMargin,
+            child: const _Fab(),
+          ),
         ],
       ),
-      floatingActionButton: const _Fab(),
-      floatingActionButtonLocation: FloatingActionButtonLocation.miniEndDocked,
     );
   }
 }
