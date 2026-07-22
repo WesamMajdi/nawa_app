@@ -239,7 +239,6 @@ class _Podium extends StatelessWidget {
             avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAjRLCdGo1EMTjXSWWlWFu3ypKQ_1cL2RpDp-P3S1HgEzQxD_jSEjhs7UA-Gi-F8KHmULNgGURMmF6ksgyzgJZ-vNKIutuXw9vjR-PDAj4scP1uaL1yzw6y27wXT8Wn04Uylvrt8OG1Gtq0UJtelQJA12JVd63uGO584P1495j0fvlm3uLCr9CHEyuMDaadvV0BBvtDF4Tly5b__5uGCiQECIuse4cxmeiNp-ziSSbOLUEUTsBkwfIA8cHXYG14lpufK2U8RIc-oA',
             name: 'أحمد',
             xp: '8,420 XP',
-            barHeight: 96,
             isFirst: false,
           ),
           SizedBox(width: AppSpacing.gutter),
@@ -248,7 +247,6 @@ class _Podium extends StatelessWidget {
             avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDirkz4tBTou3oKNhGDrJfyBSQFwuw3kG3VspNBENzvAvoA0iZmKSkG_ZvP5mdHUINr-xUbTTj5yWboTiMu4ZIdcsnwguPnXJAOBYUsKa0EhCPKTCtDyNxx8pNY8iYE7CCUPlOmh_J7x8B-juuWLACK6ss-kXyu2XlCeIqamlGF2ut6IvU_IgjEH7N3___YckysRbsT-md8MnFHsKHC2-LoDdhHs_PMQQM9iJ8e2KEw5Wo2vuo-iKXbcF5x3JoC4_icFZnaftrQaA',
             name: 'سارة',
             xp: '12,500 XP',
-            barHeight: 128,
             isFirst: true,
           ),
           SizedBox(width: AppSpacing.gutter),
@@ -257,7 +255,6 @@ class _Podium extends StatelessWidget {
             avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuC9le6DWdM9D5oP5XknB91fKEAQ_UmZrFywvp5U14eadAWdcsqf9uftKX-eKMAj6dveNKn_axR_6IGvzeezuVWM-TafrPnONzvcLvOcONx2H5EIi0n0iZ0zbAeZg2zdCUdXpwJq2EITBJKBI4WKgh5q4A_57gxOIhgktTWxFfmifdU8ZEWjkEIM1nb59q_3zgUK-lNGtxOvBpMRDiVNSUpPb-iOAGluIVYCbev6sknttUE3VrdwXhP_uuzCSALRAx1SZJXiikczFw',
             name: 'عمر',
             xp: '7,100 XP',
-            barHeight: 80,
             isFirst: false,
           ),
           SizedBox(width: 8),
@@ -272,7 +269,6 @@ class _PodiumCard extends StatelessWidget {
   final String avatarUrl;
   final String name;
   final String xp;
-  final double barHeight;
   final bool isFirst;
 
   const _PodiumCard({
@@ -280,7 +276,6 @@ class _PodiumCard extends StatelessWidget {
     required this.avatarUrl,
     required this.name,
     required this.xp,
-    required this.barHeight,
     required this.isFirst,
   });
 
@@ -356,9 +351,9 @@ class _PodiumCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          Container(
+          Expanded(
+            child: Container(
             width: double.infinity,
-            height: barHeight,
             decoration: BoxDecoration(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
               color: isFirst
@@ -386,6 +381,7 @@ class _PodiumCard extends StatelessWidget {
                   ? AppColors.primary.withAlpha(204)
                   : AppColors.onSurfaceVariant.withAlpha(77),
             ),
+          ),
           ),
         ],
       ),

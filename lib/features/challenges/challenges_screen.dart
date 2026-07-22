@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:nawa_flutter/features/leaderboard/leaderboard_screen.dart';
 import '../../core/constants/constants.dart';
 import '../../core/widgets/app_bottom_nav.dart';
-import '../leaderboard/leaderboard_screen.dart';
 
 class ChallengesScreen extends StatelessWidget {
   const ChallengesScreen({super.key});
@@ -313,7 +313,7 @@ class _FeaturedChallenge extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LeaderboardScreen())),
+              onPressed: () {},
               style:
                   ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryContainer,
@@ -616,9 +616,11 @@ class _Fab extends StatelessWidget {
           color: AppColors.background,
           size: 28,
         ),
-        onPressed: () {},
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const LeaderboardScreen()),
+        ),
       ),
     );
   }
 }
-

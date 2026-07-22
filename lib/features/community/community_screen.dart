@@ -9,15 +9,17 @@ class CommunityScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(children: [
-        const _Body(),
-        const AppBottomNav(currentTab: NavTab.community),
-        Positioned(
-          bottom: 100,
-          left: AppSpacing.containerMargin,
-          child: const _Fab(),
-        ),
-      ]),
+      body: Stack(
+        children: [
+          const _Body(),
+          const AppBottomNav(currentTab: NavTab.community),
+          Positioned(
+            bottom: 100,
+            left: AppSpacing.containerMargin,
+            child: const _Fab(),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -395,6 +397,3 @@ class _Fab extends StatelessWidget {
     );
   }
 }
-
-
-
