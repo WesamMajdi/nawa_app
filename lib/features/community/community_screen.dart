@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/constants.dart';
 import '../notifications/notifications_screen.dart';
+import '../challenges/challenges_screen.dart';
 
 class CommunityScreen extends StatelessWidget {
   const CommunityScreen({super.key});
@@ -412,7 +413,7 @@ class _BottomNav extends StatelessWidget {
                     icon: Icons.emoji_events_outlined,
                     label: 'التحديات',
                     isActive: false,
-                    onTap: () {},
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ChallengesScreen())),
                   ),
                   _NavItem(
                     icon: Icons.groups,

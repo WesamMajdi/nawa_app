@@ -4,6 +4,7 @@ import '../../core/helper/extension.dart';
 import '../path_details/path_details_screen.dart';
 import '../home/dashboard_screen.dart';
 import '../community/community_screen.dart';
+import '../challenges/challenges_screen.dart';
 
 class ExploreScreen extends StatelessWidget {
   const ExploreScreen({super.key});
@@ -370,7 +371,7 @@ class _BottomNav extends StatelessWidget {
                     icon: Icons.emoji_events_outlined,
                     label: 'التحديات',
                     isActive: false,
-                    onTap: () {},
+                    onTap: () => context.push(const ChallengesScreen()),
                   ),
                   _NavItem(
                     icon: Icons.groups_outlined,
