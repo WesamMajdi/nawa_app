@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:nawa_flutter/features/lesson_viewing/lesson_viewing_screen.dart';
-import 'package:nawa_flutter/features/community/community_screen.dart';
 import 'package:nawa_flutter/features/notifications/notifications_screen.dart';
-import 'package:nawa_flutter/features/challenges/challenges_screen.dart';
 import '../../core/constants/constants.dart';
 import '../../core/helper/extension.dart';
-import '../explore/explore_screen.dart';
+import '../../core/widgets/app_bottom_nav.dart';
 import 'widgets/progress_ring.dart';
 
 class DashboardScreen extends StatelessWidget {
@@ -15,7 +13,7 @@ class DashboardScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: Stack(children: [_buildBody(), const _BottomNav()]),
+        child: Stack(children: [_buildBody(), const AppBottomNav(currentTab: NavTab.home)]),
       ),
     );
   }
@@ -389,135 +387,4 @@ class _StatCard extends StatelessWidget {
   }
 }
 
-class _BottomNav extends StatelessWidget {
-  const _BottomNav();
 
-  @override
-  Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.bottomCenter,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.containerMargin,
-          0,
-          AppSpacing.containerMargin,
-          16,
-        ),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppRadius.xl),
-            border: Border.all(color: AppColors.onSurfaceVariant.withAlpha(25)),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primaryContainer.withAlpha(30),
-                blurRadius: 20,
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(AppRadius.xl),
-            child: BottomAppBar(
-              color: AppColors.surface.withAlpha(153),
-              padding: EdgeInsets.zero,
-              child: Row(
-                children: [
-                  _NavItem(
-                    icon: Icons.person_outline,
-                    label: 'الملف الشخصي',
-                    isActive: false,
-                    onTap: () {},
-                  ),
-                  _NavItem(
-                    icon: Icons.emoji_events_outlined,
-                    label: 'التحديات',
-                    isActive: false,
-                    onTap: () => context.push(const ChallengesScreen()),
-                  ),
-                  _NavItem(
-                    icon: Icons.groups_outlined,
-                    label: 'المجتمع',
-                    isActive: false,
-                    onTap: () => context.push(const CommunityScreen()),
-                  ),
-                  _NavItem(
-                    icon: Icons.search,
-                    label: 'الاستكشاف',
-                    isActive: false,
-                    onTap: () => context.push(const ExploreScreen()),
-                  ),
-                  _NavItem(
-                    icon: Icons.home_rounded,
-                    label: 'الرئيسية',
-                    isActive: true,
-                    onTap: () {},
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool isActive;
-  final VoidCallback onTap;
-
-  const _NavItem({
-    required this.icon,
-    required this.label,
-    required this.isActive,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              color: isActive ? AppColors.primary : AppColors.onSurfaceVariant,
-              size: 24,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontFamily: AppTypography.fontArabic,
-                fontSize: 10,
-                fontWeight: FontWeight.w500,
-                color: isActive
-                    ? AppColors.primary
-                    : AppColors.onSurfaceVariant,
-              ),
-            ),
-            if (isActive)
-              Container(
-                margin: const EdgeInsets.only(top: 4),
-                width: 4,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primary.withAlpha(128),
-                      blurRadius: 8,
-                    ),
-                  ],
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}

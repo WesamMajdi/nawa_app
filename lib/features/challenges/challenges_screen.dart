@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/constants.dart';
+import '../../core/widgets/app_bottom_nav.dart';
 
 class ChallengesScreen extends StatelessWidget {
   const ChallengesScreen({super.key});
@@ -27,11 +28,11 @@ class ChallengesScreen extends StatelessWidget {
             ],
           ),
           const _TopBar(),
-          const _BottomNav(),
+          const AppBottomNav(currentTab: NavTab.challenges),
         ],
       ),
       floatingActionButton: const _Fab(),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButtonLocation: FloatingActionButtonLocation.miniEndDocked,
     );
   }
 }
@@ -42,7 +43,9 @@ class _TopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.containerMargin),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.containerMargin,
+      ),
       height: 64,
       decoration: BoxDecoration(
         color: AppColors.surface.withAlpha(153),
@@ -81,7 +84,10 @@ class _TopBar extends StatelessWidget {
               ),
               child: Stack(
                 children: [
-                  const Icon(Icons.notifications_outlined, color: AppColors.onSurface),
+                  const Icon(
+                    Icons.notifications_outlined,
+                    color: AppColors.onSurface,
+                  ),
                   Positioned(
                     top: 4,
                     right: 4,
@@ -118,10 +124,7 @@ class _Header extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'التحديات والمسابقات',
-          style: AppTypography.headlineXL,
-        ),
+        Text('التحديات والمسابقات', style: AppTypography.headlineXL),
         const SizedBox(height: AppSpacing.stackSM),
         Text(
           'اختبر مهاراتك، تنافس مع أفضل المطورين، واربح جوائز قيمة.',
@@ -184,7 +187,11 @@ class _Chip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
-            Icon(icon, size: 18, color: isActive ? AppColors.primary : AppColors.onSurfaceVariant),
+            Icon(
+              icon,
+              size: 18,
+              color: isActive ? AppColors.primary : AppColors.onSurfaceVariant,
+            ),
             const SizedBox(width: 8),
           ],
           Text(
@@ -248,7 +255,9 @@ class _FeaturedChallenge extends StatelessWidget {
           const SizedBox(height: AppSpacing.stackSM),
           Text(
             'قم ببناء نموذج تعلم آلي لتوقع أنماط استهلاك البيانات بكفاءة عالية مستخدماً بايثون.',
-            style: AppTypography.bodyMD.copyWith(color: AppColors.onSurfaceVariant),
+            style: AppTypography.bodyMD.copyWith(
+              color: AppColors.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: AppSpacing.stackMD),
           const Divider(color: AppColors.outlineVariant, height: 1),
@@ -269,11 +278,19 @@ class _FeaturedChallenge extends StatelessWidget {
                 ],
               ),
               const SizedBox(width: AppSpacing.gutter),
-              Container(width: 1, height: 16, color: AppColors.outlineVariant.withAlpha(128)),
+              Container(
+                width: 1,
+                height: 16,
+                color: AppColors.outlineVariant.withAlpha(128),
+              ),
               const SizedBox(width: AppSpacing.gutter),
               Row(
                 children: [
-                  const Icon(Icons.emoji_events, size: 20, color: AppColors.secondary),
+                  const Icon(
+                    Icons.emoji_events,
+                    size: 20,
+                    color: AppColors.secondary,
+                  ),
                   const SizedBox(width: AppSpacing.stackSM),
                   Text(
                     '٥٠٠٠ نقطة خبرة',
@@ -293,19 +310,22 @@ class _FeaturedChallenge extends StatelessWidget {
             width: double.infinity,
             child: ElevatedButton(
               onPressed: () {},
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryContainer,
-                foregroundColor: AppColors.background,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
-                ),
-                elevation: 0,
-                textStyle: AppTypography.headlineMD,
-              ).copyWith(
-                shadowColor: WidgetStateProperty.all(Colors.transparent),
-                surfaceTintColor: WidgetStateProperty.all(Colors.transparent),
-              ),
+              style:
+                  ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryContainer,
+                    foregroundColor: AppColors.background,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
+                    ),
+                    elevation: 0,
+                    textStyle: AppTypography.headlineMD,
+                  ).copyWith(
+                    shadowColor: WidgetStateProperty.all(Colors.transparent),
+                    surfaceTintColor: WidgetStateProperty.all(
+                      Colors.transparent,
+                    ),
+                  ),
               child: const Text('انضم للتحدي الآن'),
             ),
           ),
@@ -368,9 +388,21 @@ class _CountdownTimer extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             _TimeUnit(value: '02', label: 'أيام'),
-            const Text(':', style: TextStyle(color: AppColors.onSurfaceVariant, fontWeight: FontWeight.bold)),
+            const Text(
+              ':',
+              style: TextStyle(
+                color: AppColors.onSurfaceVariant,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             _TimeUnit(value: '14', label: 'ساعات'),
-            const Text(':', style: TextStyle(color: AppColors.onSurfaceVariant, fontWeight: FontWeight.bold)),
+            const Text(
+              ':',
+              style: TextStyle(
+                color: AppColors.onSurfaceVariant,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             _TimeUnit(value: '45', label: 'دقائق', isHighlighted: true),
           ],
         ),
@@ -405,7 +437,9 @@ class _TimeUnit extends StatelessWidget {
           label,
           style: AppTypography.labelMD.copyWith(
             fontSize: 10,
-            color: isHighlighted ? AppColors.primary.withAlpha(179) : AppColors.onSurfaceVariant,
+            color: isHighlighted
+                ? AppColors.primary.withAlpha(179)
+                : AppColors.onSurfaceVariant,
           ),
         ),
       ],
@@ -421,10 +455,7 @@ class _UpcomingChallenges extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'تحديات قادمة',
-          style: AppTypography.headlineMD,
-        ),
+        Text('تحديات قادمة', style: AppTypography.headlineMD),
         const SizedBox(height: AppSpacing.stackMD),
         _UpcomingCard(
           icon: Icons.code,
@@ -495,14 +526,21 @@ class _UpcomingCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: AppTypography.headlineMD.copyWith(fontSize: 14)),
+                Text(
+                  title,
+                  style: AppTypography.headlineMD.copyWith(fontSize: 14),
+                ),
                 const SizedBox(height: 4),
                 Row(
                   children: [
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(levelIcon, size: 14, color: AppColors.onSurfaceVariant),
+                        Icon(
+                          levelIcon,
+                          size: 14,
+                          color: AppColors.onSurfaceVariant,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           level,
@@ -517,7 +555,11 @@ class _UpcomingCard extends StatelessWidget {
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.emoji_events, size: 14, color: rewardColor.withAlpha(204)),
+                        Icon(
+                          Icons.emoji_events,
+                          size: 14,
+                          color: rewardColor.withAlpha(204),
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           reward,
@@ -565,140 +607,14 @@ class _Fab extends StatelessWidget {
         ],
       ),
       child: IconButton(
-        icon: const Icon(Icons.leaderboard, color: AppColors.background, size: 28),
+        icon: const Icon(
+          Icons.leaderboard,
+          color: AppColors.background,
+          size: 28,
+        ),
         onPressed: () {},
       ),
     );
   }
 }
 
-class _BottomNav extends StatelessWidget {
-  const _BottomNav();
-
-  @override
-  Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.bottomCenter,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.containerMargin,
-          0,
-          AppSpacing.containerMargin,
-          16,
-        ),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppRadius.xl),
-            border: Border.all(color: AppColors.onSurfaceVariant.withAlpha(25)),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primaryContainer.withAlpha(30),
-                blurRadius: 20,
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(AppRadius.xl),
-            child: BottomAppBar(
-              color: AppColors.surface.withAlpha(153),
-              padding: EdgeInsets.zero,
-              child: Row(
-                children: [
-                  _NavItem(
-                    icon: Icons.person_outline,
-                    label: 'الملف الشخصي',
-                    isActive: false,
-                    onTap: () {},
-                  ),
-                  _NavItem(
-                    icon: Icons.leaderboard,
-                    label: 'التحديات',
-                    isActive: true,
-                    onTap: () {},
-                  ),
-                  _NavItem(
-                    icon: Icons.groups_outlined,
-                    label: 'المجتمع',
-                    isActive: false,
-                    onTap: () {},
-                  ),
-                  _NavItem(
-                    icon: Icons.search,
-                    label: 'الاستكشاف',
-                    isActive: false,
-                    onTap: () {},
-                  ),
-                  _NavItem(
-                    icon: Icons.home_rounded,
-                    label: 'الرئيسية',
-                    isActive: false,
-                    onTap: () {},
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool isActive;
-  final VoidCallback onTap;
-
-  const _NavItem({
-    required this.icon,
-    required this.label,
-    required this.isActive,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              color: isActive ? AppColors.primary : AppColors.onSurfaceVariant,
-              size: 24,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontFamily: AppTypography.fontArabic,
-                fontSize: 10,
-                fontWeight: FontWeight.w500,
-                color: isActive ? AppColors.primary : AppColors.onSurfaceVariant,
-              ),
-            ),
-            if (isActive)
-              Container(
-                margin: const EdgeInsets.only(top: 4),
-                width: 4,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primary.withAlpha(128),
-                      blurRadius: 8,
-                    ),
-                  ],
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}

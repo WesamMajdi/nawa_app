@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/constants.dart';
+import '../../core/widgets/app_bottom_nav.dart';
 import '../notifications/notifications_screen.dart';
-import '../challenges/challenges_screen.dart';
 
 class CommunityScreen extends StatelessWidget {
   const CommunityScreen({super.key});
@@ -9,14 +9,9 @@ class CommunityScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: const [
-          _Body(),
-          _BottomNav(),
-        ],
-      ),
+      body: Stack(children: const [_Body(), AppBottomNav(currentTab: NavTab.community)]),
       floatingActionButton: const _Fab(),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 }
@@ -35,7 +30,9 @@ class _Body extends StatelessWidget {
           _TrendingTopics(),
           SizedBox(height: AppSpacing.gutter),
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: AppSpacing.containerMargin),
+            padding: EdgeInsets.symmetric(
+              horizontal: AppSpacing.containerMargin,
+            ),
             child: _PostFeed(),
           ),
         ],
@@ -50,7 +47,9 @@ class _TopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.containerMargin),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.containerMargin,
+      ),
       height: 64,
       decoration: BoxDecoration(
         color: AppColors.surface.withAlpha(153),
@@ -82,14 +81,20 @@ class _TopBar extends StatelessWidget {
           ),
           const Spacer(),
           GestureDetector(
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen())),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+            ),
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(AppRadius.full),
                 color: Colors.transparent,
               ),
-              child: const Icon(Icons.notifications_outlined, color: AppColors.onSurface),
+              child: const Icon(
+                Icons.notifications_outlined,
+                color: AppColors.onSurface,
+              ),
             ),
           ),
         ],
@@ -108,15 +113,14 @@ class _TrendingTopics extends StatelessWidget {
       children: [
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: AppSpacing.containerMargin),
-          child: Text(
-            'المواضيع الشائعة',
-            style: AppTypography.headlineMD,
-          ),
+          child: Text('المواضيع الشائعة', style: AppTypography.headlineMD),
         ),
         const SizedBox(height: AppSpacing.stackSM),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.containerMargin),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.containerMargin,
+          ),
           child: Row(
             children: [
               _TopicChip(label: '#React_Native'),
@@ -169,11 +173,13 @@ class _PostFeed extends StatelessWidget {
           name: 'أحمد عبد الله',
           role: 'مطور واجهات أمامية',
           time: 'منذ ساعتين',
-          avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBF3Lj-E608JbgYnX4DQ6rA3gMGPDXFbnQaB-7yK-tL7iKSrFCwGhRI3lC5yA7TNzxpQCW99sgag9SiPdY2OLJOJ-DYTjUUwsUxl07lz9ZujmzZfUjdOkJdzxkhi3hetOZ5vVOoidVhWeP1swH4zBH0OKgk3dbZQN1zEzbJp8zVfWH6aIFVMVplAjpRp3uLoQ3-rDvuTOWOJP5ZLTW2HVlz7ZHVaIfu1mad4-JeJOjMNuFqIbpreeuv1e5FQ1iNUwPP1Cg0oMPBBg',
+          avatarUrl:
+              'https://lh3.googleusercontent.com/aida-public/AB6AXuBF3Lj-E608JbgYnX4DQ6rA3gMGPDXFbnQaB-7yK-tL7iKSrFCwGhRI3lC5yA7TNzxpQCW99sgag9SiPdY2OLJOJ-DYTjUUwsUxl07lz9ZujmzZfUjdOkJdzxkhi3hetOZ5vVOoidVhWeP1swH4zBH0OKgk3dbZQN1zEzbJp8zVfWH6aIFVMVplAjpRp3uLoQ3-rDvuTOWOJP5ZLTW2HVlz7ZHVaIfu1mad4-JeJOjMNuFqIbpreeuv1e5FQ1iNUwPP1Cg0oMPBBg',
           avatarBorder: AppColors.primaryContainer,
           content:
               'لقد كنت أجرب استخدام `Suspense` مع React 18 مؤخراً، النتائج مذهلة في تحسين تجربة المستخدم أثناء تحميل البيانات. هل لاحظ أحدكم أي مشاكل في الأداء عند استخدامه مع قوائم كبيرة؟',
-          codeSnippet: '<Suspense fallback={<LoadingSpinner />}>\n  <HeavyDataList />\n</Suspense>',
+          codeSnippet:
+              '<Suspense fallback={<LoadingSpinner />}>\n  <HeavyDataList />\n</Suspense>',
           likes: '24',
           comments: '8',
         ),
@@ -182,7 +188,8 @@ class _PostFeed extends StatelessWidget {
           name: 'سارة محمد',
           role: 'مهندسة نظم',
           time: 'منذ 5 ساعات',
-          avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCRwpt550h_IfP-yrEdqgSN9iao9Nt2LI_mEA_rcax2h1EnTCw4xXI6zFbLXf5Lz4GzSxRMItXiUxk6-MUEExu5Q23RbeK6W_VxSnfbbcv-82oapdxuCgIa20b6moQoI5DWFmq7PsQGDwAPz-Dy2dZo2RqXsY_XVD_v0aaIHDSTeqrEdKlTkRdh6mBBAsplV9MtNIfvvJ1kvjeCo2m3BZ4X9qpAobh_MEWVkBgkbil7zmyPwUYoKhpf7_QQnJCMsm_BhpW5XMbTXA',
+          avatarUrl:
+              'https://lh3.googleusercontent.com/aida-public/AB6AXuCRwpt550h_IfP-yrEdqgSN9iao9Nt2LI_mEA_rcax2h1EnTCw4xXI6zFbLXf5Lz4GzSxRMItXiUxk6-MUEExu5Q23RbeK6W_VxSnfbbcv-82oapdxuCgIa20b6moQoI5DWFmq7PsQGDwAPz-Dy2dZo2RqXsY_XVD_v0aaIHDSTeqrEdKlTkRdh6mBBAsplV9MtNIfvvJ1kvjeCo2m3BZ4X9qpAobh_MEWVkBgkbil7zmyPwUYoKhpf7_QQnJCMsm_BhpW5XMbTXA',
           avatarBorder: AppColors.surfaceVariant,
           content:
               'نبحث عن مطورين لمشروع مفتوح المصدر يهدف إلى توفير أدوات تحليل بيانات باللغة العربية. إذا كنت مهتماً بالمساهمة، تواصل معي. التقنيات: Python, Pandas, FastAPI.',
@@ -245,9 +252,15 @@ class _PostCard extends StatelessWidget {
                   CircleAvatar(
                     radius: 24,
                     backgroundColor: AppColors.surfaceVariant,
-                    backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl!) : null,
+                    backgroundImage: avatarUrl != null
+                        ? NetworkImage(avatarUrl!)
+                        : null,
                     child: avatarUrl == null
-                        ? const Icon(Icons.person, color: AppColors.onSurfaceVariant, size: 28)
+                        ? const Icon(
+                            Icons.person,
+                            color: AppColors.onSurfaceVariant,
+                            size: 28,
+                          )
                         : null,
                   ),
                   Positioned.fill(
@@ -294,7 +307,9 @@ class _PostCard extends StatelessWidget {
                 textDirection: TextDirection.ltr,
                 child: Text(
                   codeSnippet!,
-                  style: AppTypography.codeSM.copyWith(color: AppColors.primaryFixed),
+                  style: AppTypography.codeSM.copyWith(
+                    color: AppColors.primaryFixed,
+                  ),
                 ),
               ),
             ),
@@ -364,140 +379,16 @@ class _Fab extends StatelessWidget {
         ],
       ),
       child: IconButton(
-        icon: const Icon(Icons.add, color: AppColors.surfaceContainerLowest, size: 32),
+        icon: const Icon(
+          Icons.add,
+          color: AppColors.surfaceContainerLowest,
+          size: 32,
+        ),
         onPressed: () {},
       ),
     );
   }
 }
 
-class _BottomNav extends StatelessWidget {
-  const _BottomNav();
 
-  @override
-  Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.bottomCenter,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.containerMargin,
-          0,
-          AppSpacing.containerMargin,
-          16,
-        ),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppRadius.xl),
-            border: Border.all(color: AppColors.onSurfaceVariant.withAlpha(25)),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primaryContainer.withAlpha(30),
-                blurRadius: 20,
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(AppRadius.xl),
-            child: BottomAppBar(
-              color: AppColors.surface.withAlpha(153),
-              padding: EdgeInsets.zero,
-              child: Row(
-                children: [
-                  _NavItem(
-                    icon: Icons.person_outline,
-                    label: 'الملف الشخصي',
-                    isActive: false,
-                    onTap: () {},
-                  ),
-                  _NavItem(
-                    icon: Icons.emoji_events_outlined,
-                    label: 'التحديات',
-                    isActive: false,
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ChallengesScreen())),
-                  ),
-                  _NavItem(
-                    icon: Icons.groups,
-                    label: 'المجتمع',
-                    isActive: true,
-                    onTap: () {},
-                  ),
-                  _NavItem(
-                    icon: Icons.search,
-                    label: 'الاستكشاف',
-                    isActive: false,
-                    onTap: () {},
-                  ),
-                  _NavItem(
-                    icon: Icons.home_rounded,
-                    label: 'الرئيسية',
-                    isActive: false,
-                    onTap: () {},
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
 
-class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool isActive;
-  final VoidCallback onTap;
-
-  const _NavItem({
-    required this.icon,
-    required this.label,
-    required this.isActive,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              color: isActive ? AppColors.primary : AppColors.onSurfaceVariant,
-              size: 24,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontFamily: AppTypography.fontArabic,
-                fontSize: 10,
-                fontWeight: FontWeight.w500,
-                color: isActive ? AppColors.primary : AppColors.onSurfaceVariant,
-              ),
-            ),
-            if (isActive)
-              Container(
-                margin: const EdgeInsets.only(top: 4),
-                width: 4,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primary.withAlpha(128),
-                      blurRadius: 8,
-                    ),
-                  ],
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
