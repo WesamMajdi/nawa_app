@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/constants.dart';
 import '../../core/widgets/app_bottom_nav.dart';
+import '../leaderboard/leaderboard_screen.dart';
 
 class ChallengesScreen extends StatelessWidget {
   const ChallengesScreen({super.key});
@@ -312,7 +313,7 @@ class _FeaturedChallenge extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () {},
+        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LeaderboardScreen())),
               style:
                   ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryContainer,
