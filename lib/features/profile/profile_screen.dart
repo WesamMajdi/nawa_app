@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:nawa_flutter/core/constants/constants.dart';
+import 'package:nawa_flutter/core/widgets/app_bottom_nav.dart';
+import 'package:nawa_flutter/features/notifications/notifications_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -40,7 +42,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ],
           ),
           const _TopBar(),
-          const _BottomNav(),
+          AppBottomNav(currentTab: NavTab.profile),
         ],
       ),
     );
@@ -72,7 +74,10 @@ class _TopBar extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               GestureDetector(
-                onTap: () {},
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+                ),
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
@@ -299,18 +304,15 @@ class _StatsGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GridView.count(
-      crossAxisCount: 4,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: AppSpacing.gutter,
-      crossAxisSpacing: AppSpacing.gutter,
-      childAspectRatio: 0.85,
+    return Row(
       children: const [
-        _StatItem(icon: Icons.military_tech, color: AppColors.primary, value: 'Lv. 42', label: 'المستوى'),
-        _StatItem(icon: Icons.local_fire_department, color: AppColors.secondary, value: '14', label: 'يوم متتالي'),
-        _StatItem(icon: Icons.terminal, color: AppColors.tertiaryContainer, value: '8,450', label: 'نقاط الخبرة (XP)'),
-        _StatItem(icon: Icons.workspace_premium, color: AppColors.primaryFixedDim, value: '7', label: 'إنجازات'),
+        Expanded(child: _StatItem(icon: Icons.military_tech, color: AppColors.primary, value: 'Lv. 42', label: 'المستوى')),
+        SizedBox(width: AppSpacing.gutter),
+        Expanded(child: _StatItem(icon: Icons.local_fire_department, color: AppColors.secondary, value: '14', label: 'يوم متتالي')),
+        SizedBox(width: AppSpacing.gutter),
+        Expanded(child: _StatItem(icon: Icons.terminal, color: AppColors.tertiaryContainer, value: '8,450', label: 'XP')),
+        SizedBox(width: AppSpacing.gutter),
+        Expanded(child: _StatItem(icon: Icons.workspace_premium, color: AppColors.primaryFixedDim, value: '7', label: 'إنجازات')),
       ],
     );
   }
@@ -499,87 +501,4 @@ class _AchievementCard extends StatelessWidget {
   }
 }
 
-class _BottomNav extends StatelessWidget {
-  const _BottomNav();
 
-  @override
-  Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.bottomCenter,
-      child: Container(
-        margin: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        height: 64,
-        decoration: BoxDecoration(
-          color: AppColors.surfaceContainerHigh.withAlpha(102),
-          borderRadius: BorderRadius.circular(AppRadius.xl),
-          border: Border.all(color: AppColors.onSurfaceVariant.withAlpha(25)),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primaryContainer.withAlpha(30),
-              blurRadius: 20,
-            ),
-          ],
-        ),
-        child: const Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _NavItem(icon: Icons.person, label: 'الملف الشخصي', isActive: true),
-            _NavItem(icon: Icons.emoji_events, label: 'التحديات', isActive: false),
-            _NavItem(icon: Icons.groups, label: 'المجتمع', isActive: false),
-            _NavItem(icon: Icons.search, label: 'الاستكشاف', isActive: false),
-            _NavItem(icon: Icons.home, label: 'الرئيسية', isActive: false),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool isActive;
-
-  const _NavItem({
-    required this.icon,
-    required this.label,
-    required this.isActive,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final color = isActive ? AppColors.primary : AppColors.onSurfaceVariant;
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(icon, color: color, size: 24),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: AppTypography.labelMD.copyWith(
-            color: color,
-            fontSize: 10,
-          ),
-        ),
-        if (isActive) ...[
-          const SizedBox(height: 2),
-          Container(
-            width: 4,
-            height: 4,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.primary,
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withAlpha(128),
-                  blurRadius: 8,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-}
