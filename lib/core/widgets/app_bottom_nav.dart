@@ -48,14 +48,12 @@ class AppBottomNav extends StatelessWidget {
                     label: 'الملف الشخصي',
                     isActive: currentTab == NavTab.profile,
                     onTap: () {
-                      if (currentTab != NavTab.challenges) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const ProfileScreen(),
-                          ),
-                        );
-                      }
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ProfileScreen(),
+                        ),
+                      );
                     },
                   ),
                   _NavItem(

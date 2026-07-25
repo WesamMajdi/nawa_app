@@ -43,7 +43,9 @@ class _TopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.containerMargin),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.containerMargin,
+      ),
       height: 64,
       decoration: BoxDecoration(
         color: AppColors.surface.withAlpha(153),
@@ -123,7 +125,9 @@ class _HeroSection extends StatelessWidget {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(AppRadius.full),
                 color: AppColors.primaryContainer.withAlpha(25),
-                border: Border.all(color: AppColors.primaryContainer.withAlpha(51)),
+                border: Border.all(
+                  color: AppColors.primaryContainer.withAlpha(51),
+                ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -162,12 +166,18 @@ class _HeroSection extends StatelessWidget {
                   _TimerBlock(value: '02'),
                   const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 8),
-                    child: Text(':', style: TextStyle(color: AppColors.primary, fontSize: 32)),
+                    child: Text(
+                      ':',
+                      style: TextStyle(color: AppColors.primary, fontSize: 32),
+                    ),
                   ),
                   _TimerBlock(value: '07'),
                   const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 8),
-                    child: Text(':', style: TextStyle(color: AppColors.primary, fontSize: 32)),
+                    child: Text(
+                      ':',
+                      style: TextStyle(color: AppColors.primary, fontSize: 32),
+                    ),
                   ),
                   _TimerBlock(value: '22'),
                 ],
@@ -231,7 +241,11 @@ class _DescriptionSection extends StatelessWidget {
                   borderRadius: BorderRadius.circular(AppRadius.lg),
                   color: AppColors.primaryContainer.withAlpha(25),
                 ),
-                child: const Icon(Icons.description, color: AppColors.primary, size: 20),
+                child: const Icon(
+                  Icons.description,
+                  color: AppColors.primary,
+                  size: 20,
+                ),
               ),
               const SizedBox(width: AppSpacing.stackSM),
               Text('عن التحدي', style: AppTypography.headlineMD),
@@ -240,7 +254,9 @@ class _DescriptionSection extends StatelessWidget {
           const SizedBox(height: AppSpacing.stackMD),
           Text(
             'قم ببناء نموذج تعلم آلي لتوقع أنماط استهلاك البيانات بكفاءة عالية باستخدام بايثون. يهدف هذا التحدي إلى تحسين دقة التوقعات بنسبة لا تقل عن 92% مع مراعاة استهلاك الموارد البرمجية.',
-            style: AppTypography.bodyLG.copyWith(color: AppColors.onSurfaceVariant),
+            style: AppTypography.bodyLG.copyWith(
+              color: AppColors.onSurfaceVariant,
+            ),
           ),
         ],
       ),
@@ -260,23 +276,27 @@ class _RewardsSection extends StatelessWidget {
         const SizedBox(height: AppSpacing.gutter),
         Row(
           children: [
-            Expanded(child: _RewardCard(
-              icon: Icons.military_tech,
-              iconBg: AppColors.secondaryContainer.withAlpha(25),
-              iconColor: AppColors.secondary,
-              iconFill: true,
-              title: '5,000 XP',
-              subtitle: 'نقاط خبرة تقنية',
-            )),
+            Expanded(
+              child: _RewardCard(
+                icon: Icons.military_tech,
+                iconBg: AppColors.secondaryContainer.withAlpha(25),
+                iconColor: AppColors.secondary,
+                iconFill: true,
+                title: '5,000 XP',
+                subtitle: 'نقاط خبرة تقنية',
+              ),
+            ),
             const SizedBox(width: AppSpacing.gutter),
-            Expanded(child: _RewardCard(
-              icon: Icons.architecture,
-              iconBg: AppColors.primaryContainer.withAlpha(25),
-              iconColor: AppColors.primary,
-              iconFill: false,
-              title: 'شارة معمار',
-              subtitle: 'Architect Badge',
-            )),
+            Expanded(
+              child: _RewardCard(
+                icon: Icons.architecture,
+                iconBg: AppColors.primaryContainer.withAlpha(25),
+                iconColor: AppColors.primary,
+                iconFill: false,
+                title: 'شارة معمار',
+                subtitle: 'Architect Badge',
+              ),
+            ),
           ],
         ),
       ],
@@ -315,16 +335,18 @@ class _RewardCard extends StatelessWidget {
           Container(
             width: 56,
             height: 56,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: iconBg,
-            ),
+            decoration: BoxDecoration(shape: BoxShape.circle, color: iconBg),
             child: Icon(icon, color: iconColor, size: 28),
           ),
           const SizedBox(height: AppSpacing.stackSM),
-          Text(title, style: AppTypography.headlineMD.copyWith(
-            color: iconColor == AppColors.secondary ? AppColors.primary : AppColors.onSurface,
-          )),
+          Text(
+            title,
+            style: AppTypography.headlineMD.copyWith(
+              color: iconColor == AppColors.secondary
+                  ? AppColors.primary
+                  : AppColors.onSurface,
+            ),
+          ),
           const SizedBox(height: 4),
           Text(
             subtitle,
@@ -397,9 +419,17 @@ class _RequirementItem extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: AppTypography.headlineMD.copyWith(fontSize: 16)),
+                Text(
+                  title,
+                  style: AppTypography.headlineMD.copyWith(fontSize: 16),
+                ),
                 const SizedBox(height: 4),
-                Text(body, style: AppTypography.bodyMD.copyWith(color: AppColors.onSurfaceVariant)),
+                Text(
+                  body,
+                  style: AppTypography.bodyMD.copyWith(
+                    color: AppColors.onSurfaceVariant,
+                  ),
+                ),
               ],
             ),
           ),
@@ -422,7 +452,9 @@ class _ImageSection extends StatelessWidget {
         color: AppColors.surfaceContainerHigh.withAlpha(153),
         border: Border.all(color: AppColors.onSurfaceVariant.withAlpha(12)),
         image: const DecorationImage(
-          image: NetworkImage('https://lh3.googleusercontent.com/aida-public/AB6AXuBW4R2kEE1Z4OUF500vUeHWZ5_eX7BpUE50sSO5CSxswsbEzrVsqvwKxGXm9AbAQH2X529O9BZfYk4JQx9wQPEcKNQfFvdQU8QbNfxZC0U_dfWncMBJGqPTSi1x2WKu5hL88tRfStXSLrS-WA5-qRd2WnJ-6AXcJwjF1rJG1prN2tzz3mK9o-BxmI-1U_GN_guJTCkOyudhfqcwY0wyr_Cu6j19KhLys8IaZP8frqLn5yETnbO6MqbX8HENBG_QoO4LUk_HojqffQ'),
+          image: NetworkImage(
+            'https://lh3.googleusercontent.com/aida-public/AB6AXuBW4R2kEE1Z4OUF500vUeHWZ5_eX7BpUE50sSO5CSxswsbEzrVsqvwKxGXm9AbAQH2X529O9BZfYk4JQx9wQPEcKNQfFvdQU8QbNfxZC0U_dfWncMBJGqPTSi1x2WKu5hL88tRfStXSLrS-WA5-qRd2WnJ-6AXcJwjF1rJG1prN2tzz3mK9o-BxmI-1U_GN_guJTCkOyudhfqcwY0wyr_Cu6j19KhLys8IaZP8frqLn5yETnbO6MqbX8HENBG_QoO4LUk_HojqffQ',
+          ),
           fit: BoxFit.cover,
           opacity: 0.8,
         ),
@@ -458,18 +490,21 @@ class _BottomCta extends StatelessWidget {
             height: 56,
             child: ElevatedButton(
               onPressed: () {},
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.onPrimaryContainer,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.xl),
-                ),
-                elevation: 0,
-                textStyle: AppTypography.headlineMD,
-              ).copyWith(
-                shadowColor: WidgetStateProperty.all(Colors.transparent),
-                surfaceTintColor: WidgetStateProperty.all(Colors.transparent),
-              ),
+              style:
+                  ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: AppColors.onPrimaryContainer,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.xl),
+                    ),
+                    elevation: 0,
+                    textStyle: AppTypography.headlineMD,
+                  ).copyWith(
+                    shadowColor: WidgetStateProperty.all(Colors.transparent),
+                    surfaceTintColor: WidgetStateProperty.all(
+                      Colors.transparent,
+                    ),
+                  ),
               child: const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
