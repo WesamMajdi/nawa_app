@@ -13,8 +13,14 @@ class DashboardScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: Stack(children: [_buildBody(), const AppBottomNav(currentTab: NavTab.home)]),
+        child: Stack(
+          children: [
+            _buildBody(),
+            const AppBottomNav(currentTab: NavTab.home),
+          ],
+        ),
       ),
+      drawer: const Drawer(),
     );
   }
 
@@ -47,9 +53,9 @@ class _TopBar extends StatelessWidget {
     return Row(
       children: [
         IconButton(
-          icon: const Icon(Icons.notifications_outlined),
+          icon: const Icon(Icons.menu),
           color: AppColors.onSurface,
-          onPressed: () => context.push(const NotificationsScreen()),
+          onPressed: () => Scaffold.of(context).openDrawer(),
         ),
         const Spacer(),
         Text(
@@ -58,9 +64,9 @@ class _TopBar extends StatelessWidget {
         ),
         const Spacer(),
         IconButton(
-          icon: const Icon(Icons.menu),
+          icon: const Icon(Icons.notifications_outlined),
           color: AppColors.onSurface,
-          onPressed: () {},
+          onPressed: () => context.push(const NotificationsScreen()),
         ),
       ],
     );
@@ -386,5 +392,3 @@ class _StatCard extends StatelessWidget {
     );
   }
 }
-
-
