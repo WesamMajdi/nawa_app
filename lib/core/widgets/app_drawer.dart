@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:nawa_flutter/core/constants/constants.dart';
 import 'package:nawa_flutter/core/helper/extension.dart';
+import 'package:nawa_flutter/features/account_settings/account_settings_screen.dart';
 import 'package:nawa_flutter/features/certificates_store/certificates_store_screen.dart';
 import 'package:nawa_flutter/features/challenges/challenges_screen.dart';
 import 'package:nawa_flutter/features/community/community_screen.dart';
@@ -83,6 +84,15 @@ class AppDrawer extends StatelessWidget {
               onTap: () {
                 Navigator.pop(context);
                 context.push(const CertificatesStoreScreen());
+              },
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.settings_outlined),
+              title: const Text('الإعدادات'),
+              onTap: () {
+                Navigator.pop(context);
+                context.push(const AccountSettingsScreen());
               },
             ),
           ],
