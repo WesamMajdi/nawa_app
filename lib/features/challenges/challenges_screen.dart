@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nawa_flutter/features/leaderboard/leaderboard_screen.dart';
+import 'package:nawa_flutter/features/notifications/notifications_screen.dart';
 import '../../core/constants/constants.dart';
 import '../../core/widgets/app_bottom_nav.dart';
 
@@ -80,7 +81,10 @@ class _TopBar extends StatelessWidget {
           ),
           const Spacer(),
           GestureDetector(
-            onTap: () {},
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+            ),
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
