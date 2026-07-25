@@ -7,20 +7,25 @@ class CertificatesStoreScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: ListView(
-        padding: const EdgeInsets.only(
-          left: AppSpacing.containerMargin,
-          right: AppSpacing.containerMargin,
-          top: 72,
-          bottom: 100,
-        ),
+      body: Stack(
         children: [
-          const _Header(),
-          const SizedBox(height: 48),
-          const _CertificatesSection(),
-          const SizedBox(height: 48),
-          const _SubscriptionSection(),
-          const SizedBox(height: 24),
+          ListView(
+            padding: const EdgeInsets.only(
+              left: AppSpacing.containerMargin,
+              right: AppSpacing.containerMargin,
+              top: 72,
+              bottom: 100,
+            ),
+            children: [
+              const _Header(),
+              const SizedBox(height: 48),
+              const _CertificatesSection(),
+              const SizedBox(height: 48),
+              const _SubscriptionSection(),
+              const SizedBox(height: 24),
+            ],
+          ),
+          _TopBar(),
         ],
       ),
     );
@@ -45,6 +50,52 @@ class _Header extends StatelessWidget {
           style: AppTypography.bodyMD.copyWith(color: AppColors.onSurfaceVariant),
         ),
       ],
+    );
+  }
+}
+
+class _TopBar extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.containerMargin),
+      height: 64,
+      decoration: BoxDecoration(
+        color: AppColors.surface.withAlpha(153),
+        border: Border(
+          bottom: BorderSide(color: AppColors.onSurfaceVariant.withAlpha(25)),
+        ),
+      ),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(AppRadius.full),
+              ),
+              child: const Icon(Icons.arrow_forward, color: AppColors.primary),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.stackSM),
+          Text(
+            'الشهادات والمتجر',
+            style: AppTypography.headlineMD.copyWith(color: AppColors.primary),
+          ),
+          const Spacer(),
+          GestureDetector(
+            onTap: () {},
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(AppRadius.full),
+              ),
+              child: const Icon(Icons.more_vert, color: AppColors.onSurface),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
