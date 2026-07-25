@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nawa_flutter/core/widgets/app_drawer.dart';
 import '../../core/constants/constants.dart';
 import '../../core/widgets/app_bottom_nav.dart';
 import '../notifications/notifications_screen.dart';
@@ -9,6 +10,7 @@ class CommunityScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: const AppDrawer(),
       body: Stack(
         children: [
           const _Body(),
@@ -68,7 +70,7 @@ class _TopBar extends StatelessWidget {
       child: Row(
         children: [
           GestureDetector(
-            onTap: () {},
+            onTap: () => Scaffold.of(context).openDrawer(),
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(

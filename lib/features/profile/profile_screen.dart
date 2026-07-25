@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:nawa_flutter/core/constants/constants.dart';
 import 'package:nawa_flutter/core/widgets/app_bottom_nav.dart';
+import 'package:nawa_flutter/core/widgets/app_drawer.dart';
 import 'package:nawa_flutter/features/notifications/notifications_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -17,6 +18,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: const AppDrawer(),
       body: Stack(
         children: [
           ListView(
@@ -88,7 +90,7 @@ class _TopBar extends StatelessWidget {
               ),
               const SizedBox(width: AppSpacing.stackSM),
               GestureDetector(
-                onTap: () {},
+                onTap: () => Scaffold.of(context).openDrawer(),
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(

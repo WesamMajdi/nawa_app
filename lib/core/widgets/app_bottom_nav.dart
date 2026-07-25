@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:nawa_flutter/features/home/dashboard_screen.dart';
+import 'package:nawa_flutter/features/profile/profile_screen.dart';
 import '../constants/constants.dart';
 import '../../features/explore/explore_screen.dart';
 import '../../features/community/community_screen.dart';
@@ -45,7 +47,16 @@ class AppBottomNav extends StatelessWidget {
                     icon: Icons.person_outline,
                     label: 'الملف الشخصي',
                     isActive: currentTab == NavTab.profile,
-                    onTap: () {},
+                    onTap: () {
+                      if (currentTab != NavTab.challenges) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ProfileScreen(),
+                          ),
+                        );
+                      }
+                    },
                   ),
                   _NavItem(
                     icon: Icons.emoji_events_outlined,
@@ -53,7 +64,12 @@ class AppBottomNav extends StatelessWidget {
                     isActive: currentTab == NavTab.challenges,
                     onTap: () {
                       if (currentTab != NavTab.challenges) {
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => const ChallengesScreen()));
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ChallengesScreen(),
+                          ),
+                        );
                       }
                     },
                   ),
@@ -63,7 +79,12 @@ class AppBottomNav extends StatelessWidget {
                     isActive: currentTab == NavTab.community,
                     onTap: () {
                       if (currentTab != NavTab.community) {
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => const CommunityScreen()));
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const CommunityScreen(),
+                          ),
+                        );
                       }
                     },
                   ),
@@ -73,7 +94,12 @@ class AppBottomNav extends StatelessWidget {
                     isActive: currentTab == NavTab.explore,
                     onTap: () {
                       if (currentTab != NavTab.explore) {
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => const ExploreScreen()));
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ExploreScreen(),
+                          ),
+                        );
                       }
                     },
                   ),
@@ -82,12 +108,13 @@ class AppBottomNav extends StatelessWidget {
                     label: 'الرئيسية',
                     isActive: currentTab == NavTab.home,
                     onTap: () {
-                      if (currentTab != NavTab.home) {
-                        if (onHomeTap != null) {
-                          onHomeTap!();
-                        } else {
-                          Navigator.pop(context);
-                        }
+                      if (currentTab != NavTab.explore) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const DashboardScreen(),
+                          ),
+                        );
                       }
                     },
                   ),
@@ -134,7 +161,9 @@ class _NavItem extends StatelessWidget {
                 fontFamily: AppTypography.fontArabic,
                 fontSize: 10,
                 fontWeight: FontWeight.w500,
-                color: isActive ? AppColors.primary : AppColors.onSurfaceVariant,
+                color: isActive
+                    ? AppColors.primary
+                    : AppColors.onSurfaceVariant,
               ),
             ),
             if (isActive)
