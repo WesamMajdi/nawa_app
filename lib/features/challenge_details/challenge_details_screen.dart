@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../core/constants/constants.dart';
+import 'package:nawa_flutter/core/constants/constants.dart';
 
 class ChallengeDetailsScreen extends StatelessWidget {
   const ChallengeDetailsScreen({super.key});
