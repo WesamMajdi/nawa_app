@@ -4,7 +4,8 @@ import '../../core/helper/extension.dart';
 import '../registration_confirmation/registration_confirmation_screen.dart';
 
 class PathDetailsScreen extends StatelessWidget {
-  const PathDetailsScreen({super.key});
+  final String pathSlug;
+  const PathDetailsScreen({super.key, required this.pathSlug});
 
   @override
   Widget build(BuildContext context) {

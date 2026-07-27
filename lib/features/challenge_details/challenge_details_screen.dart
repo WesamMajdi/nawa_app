@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:nawa_flutter/core/constants/constants.dart';
 
 class ChallengeDetailsScreen extends StatelessWidget {
-  const ChallengeDetailsScreen({super.key});
+  final String challengeId;
+  const ChallengeDetailsScreen({super.key, required this.challengeId});
 
   @override
   Widget build(BuildContext context) {
