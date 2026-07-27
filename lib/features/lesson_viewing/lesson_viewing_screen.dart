@@ -4,7 +4,8 @@ import 'package:nawa_flutter/features/home/dashboard_screen.dart';
 import '../../core/constants/constants.dart';
 
 class LessonViewingScreen extends StatelessWidget {
-  const LessonViewingScreen({super.key});
+  final String lessonId;
+  const LessonViewingScreen({super.key, required this.lessonId});
 
   @override
   Widget build(BuildContext context) {
