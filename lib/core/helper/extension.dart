@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 extension ContextExtension on BuildContext {
   void push(Widget page) {
@@ -20,14 +19,5 @@ extension ContextExtension on BuildContext {
 
   void pop() {
     Navigator.pop(this);
-  }
-
-  // GoRouter navigation
-  void goRoute(String path) {
-    go(path);
-  }
-
-  void pushRoute(String path) {
-    push(path);
   }
 }

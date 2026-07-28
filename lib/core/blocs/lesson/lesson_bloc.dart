@@ -1,7 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
-import '../models/lesson_model.dart';
-import '../repositories/lesson_repository.dart';
+import '../../models/lesson_model.dart';
+import '../../repositories/lesson_repository.dart';
 
 // Events
 sealed class LessonEvent extends Equatable {

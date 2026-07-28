@@ -1,14 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import '../di/dependency_injection.dart';
-import '../blocs/auth/auth_bloc.dart';
-import '../blocs/dashboard/dashboard_bloc.dart';
-import '../blocs/path/path_bloc.dart';
-import '../blocs/challenge/challenge_bloc.dart';
-import '../blocs/community/community_bloc.dart';
-import '../blocs/leaderboard/leaderboard_bloc.dart';
-import '../blocs/notification/notification_bloc.dart';
 import '../../features/onboarding/onboarding_screen.dart';
 import '../../features/auth/login/login_screen.dart';
 import '../../features/auth/signup/signup_screen.dart';

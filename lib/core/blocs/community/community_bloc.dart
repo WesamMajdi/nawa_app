@@ -1,8 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
-import '../models/post_model.dart';
-import '../network/api_response.dart';
-import '../repositories/community_repository.dart';
+import '../../models/post_model.dart';
+import '../../repositories/community_repository.dart';
 
 // Events
 sealed class CommunityEvent extends Equatable {

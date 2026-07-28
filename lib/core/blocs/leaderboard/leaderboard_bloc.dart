@@ -1,8 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
-import '../models/leaderboard_model.dart';
-import '../network/api_response.dart';
-import '../repositories/leaderboard_repository.dart';
+import '../../models/leaderboard_model.dart';
+import '../../repositories/leaderboard_repository.dart';
 
 // Events
 sealed class LeaderboardEvent extends Equatable {

@@ -1,3 +1,5 @@
+import 'user_model.dart';
+
 class AuthResult {
   final UserModel user;
   final String accessToken;

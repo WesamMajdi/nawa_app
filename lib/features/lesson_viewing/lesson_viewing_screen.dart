@@ -364,7 +364,7 @@ class _LessonList extends StatelessWidget {
   static void _navigateToLesson(BuildContext context, String title) {
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => const LessonViewingScreen()),
+      MaterialPageRoute(builder: (_) => const LessonViewingScreen(lessonId: '1')),
     );
   }
 

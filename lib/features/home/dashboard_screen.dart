@@ -257,7 +257,7 @@ class _CurrentPathCard extends StatelessWidget {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
-                  context.push(LessonViewingScreen());
+                  context.push(const LessonViewingScreen(lessonId: '1'));
                 },
                 style:
                     ElevatedButton.styleFrom(

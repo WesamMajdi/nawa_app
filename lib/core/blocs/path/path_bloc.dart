@@ -1,7 +1,8 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
-import '../models/path_model.dart';
-import '../repositories/path_repository.dart';
+import '../../models/path_model.dart';
+import '../../models/dashboard_model.dart';
+import '../../repositories/path_repository.dart';
 
 // Events
 sealed class PathEvent extends Equatable {

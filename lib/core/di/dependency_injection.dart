@@ -1,5 +1,3 @@
-import 'package:dio/dio.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../network/api_client.dart';
 import '../repositories/auth_repository.dart';
 import '../repositories/user_repository.dart';

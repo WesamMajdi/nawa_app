@@ -1,7 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
-import '../models/auth_result.dart';
-import '../repositories/auth_repository.dart';
+import '../../models/auth_result.dart';
+import '../../repositories/auth_repository.dart';
 
 // Events
 sealed class AuthEvent extends Equatable {
@@ -54,8 +54,8 @@ sealed class AuthState extends Equatable {
 class AuthInitial extends AuthState {}
 class AuthLoading extends AuthState {}
 class AuthAuthenticated extends AuthState {
-  final AuthResult result;
-  const AuthAuthenticated(this.result);
+  final AuthResult? result;
+  const AuthAuthenticated([this.result]);
   @override
   List<Object?> get props => [result];
 }
@@ -82,12 +82,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   Future<void> _onCheckStatus(AuthCheckStatus event, Emitter<AuthState> emit) async {
     final isLoggedIn = await _repository.isLoggedIn();
-    emit(isLoggedIn ? AuthAuthenticated(AuthResult(
-      user: null as dynamic,
-      accessToken: '',
-      expiresAt: DateTime.now(),
-      tokenType: 'bearer',
-    )) : AuthUnauthenticated());
+    emit(isLoggedIn ? const AuthAuthenticated() : AuthUnauthenticated());
   }
 
   Future<void> _onLogin(AuthLoginRequested event, Emitter<AuthState> emit) async {

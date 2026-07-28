@@ -512,7 +512,7 @@ class _RegistrationConfirmationScreenState
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => const LessonViewingScreen(),
+                        builder: (_) => const LessonViewingScreen(lessonId: '1'),
                       ),
                     );
                   },

@@ -231,7 +231,7 @@ class _CourseCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => context.push(const PathDetailsScreen()),
+      onTap: () => context.push(PathDetailsScreen(pathSlug: course.title)),
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: const Color(0xFF1E1C29),

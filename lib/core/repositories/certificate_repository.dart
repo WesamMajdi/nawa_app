@@ -1,5 +1,4 @@
 import '../models/plan_model.dart';
-import '../models/certificate_model.dart';
 import '../network/api_client.dart';
 import '../network/api_endpoints.dart';
 

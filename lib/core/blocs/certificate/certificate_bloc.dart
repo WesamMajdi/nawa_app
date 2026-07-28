@@ -1,8 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
-import '../models/plan_model.dart';
-import '../models/certificate_model.dart';
-import '../repositories/certificate_repository.dart';
+import '../../models/plan_model.dart';
+import '../../repositories/certificate_repository.dart';
 
 // Events
 sealed class CertificateEvent extends Equatable {

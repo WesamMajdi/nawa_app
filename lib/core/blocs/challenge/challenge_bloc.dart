@@ -1,8 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
-import '../models/challenge_model.dart';
-import '../network/api_response.dart';
-import '../repositories/challenge_repository.dart';
+import '../../models/challenge_model.dart';
+import '../../repositories/challenge_repository.dart';
 
 // Events
 sealed class ChallengeEvent extends Equatable {

@@ -1,8 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
-import '../models/notification_model.dart';
-import '../network/api_response.dart';
-import '../repositories/notification_repository.dart';
+import '../../models/notification_model.dart';
+import '../../repositories/notification_repository.dart';
 
 // Events
 sealed class NotificationEvent extends Equatable {

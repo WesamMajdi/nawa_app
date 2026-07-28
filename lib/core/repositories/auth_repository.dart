@@ -1,5 +1,4 @@
 import '../models/auth_result.dart';
-import '../models/user_model.dart';
 import '../network/api_client.dart';
 import '../network/api_endpoints.dart';
 
