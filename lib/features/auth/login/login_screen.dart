@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../core/blocs/auth/auth_bloc.dart';
 import '../../../core/constants/constants.dart';
 import '../../../core/helper/extension.dart';
-import '../widgets/auth_field.dart';
+import '../../home/dashboard_screen.dart';
 import '../widgets/auth_button.dart';
 import '../widgets/auth_divider.dart';
+import '../widgets/auth_field.dart';
 import '../widgets/social_button.dart';
 import '../signup/signup_screen.dart';
-import '../../home/dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -20,6 +22,31 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _listenToAuthState();
+  }
+
+  void _listenToAuthState() {
+    final authBloc = context.read<AuthBloc>();
+    authBloc.stream.listen((state) {
+      if (!mounted) return;
+      if (state is AuthAuthenticated) {
+        setState(() => _isLoading = false);
+        context.pushAndRemoveUntil(const DashboardScreen());
+      } else if (state is AuthError) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(state.message)),
+        );
+      } else if (state is AuthLoading) {
+        setState(() => _isLoading = true);
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -33,16 +60,17 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _login() {
-    final username = _emailController.text.trim();
+    final email = _emailController.text.trim();
     final password = _passwordController.text;
 
-    if (username == '1' && password == '1') {
-      context.pushAndRemoveUntil(const DashboardScreen());
-    } else {
+    if (email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('اسم المستخدم أو كلمة المرور غير صحيحة')),
+        const SnackBar(content: Text('يرجى إدخال البريد الإلكتروني وكلمة المرور')),
       );
+      return;
     }
+
+    context.read<AuthBloc>().add(AuthLoginRequested(email: email, password: password));
   }
 
   @override
@@ -162,8 +190,8 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: AppSpacing.stackSM),
               AuthButton(
-                label: 'تسجيل الدخول',
-                onPressed: _login,
+                label: _isLoading ? 'جاري التحميل...' : 'تسجيل الدخول',
+                onPressed: _isLoading ? null : _login,
               ),
               const SizedBox(height: AppSpacing.stackMD),
               Row(

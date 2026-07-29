@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../core/blocs/auth/auth_bloc.dart';
 import '../../../core/constants/constants.dart';
-import '../widgets/auth_field.dart';
+import '../../../core/helper/extension.dart';
+import '../../home/dashboard_screen.dart';
 import '../widgets/auth_button.dart';
 import '../widgets/auth_divider.dart';
+import '../widgets/auth_field.dart';
 import '../widgets/social_button.dart';
 
 class SignupScreen extends StatefulWidget {
@@ -20,6 +24,31 @@ class _SignupScreenState extends State<SignupScreen> {
   final _confirmPasswordController = TextEditingController();
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _listenToAuthState();
+  }
+
+  void _listenToAuthState() {
+    final authBloc = context.read<AuthBloc>();
+    authBloc.stream.listen((state) {
+      if (!mounted) return;
+      if (state is AuthAuthenticated) {
+        setState(() => _isLoading = false);
+        context.pushAndRemoveUntil(const DashboardScreen());
+      } else if (state is AuthError) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(state.message)),
+        );
+      } else if (state is AuthLoading) {
+        setState(() => _isLoading = true);
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -32,6 +61,29 @@ class _SignupScreenState extends State<SignupScreen> {
 
   void _goToLogin() {
     Navigator.pop(context);
+  }
+
+  void _signup() {
+    final name = _nameController.text.trim();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+    final confirmPassword = _confirmPasswordController.text;
+
+    if (name.isEmpty || email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('يرجى ملء جميع الحقول')),
+      );
+      return;
+    }
+
+    if (password != confirmPassword) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('كلمة المرور غير متطابقة')),
+      );
+      return;
+    }
+
+    context.read<AuthBloc>().add(AuthRegisterRequested(name: name, email: email, password: password));
   }
 
   @override
@@ -166,8 +218,8 @@ class _SignupScreenState extends State<SignupScreen> {
               ),
               const SizedBox(height: AppSpacing.stackMD),
               AuthButton(
-                label: 'إنشاء حساب',
-                onPressed: () {},
+                label: _isLoading ? 'جاري التحميل...' : 'إنشاء حساب',
+                onPressed: _isLoading ? null : _signup,
               ),
               const SizedBox(height: AppSpacing.stackMD),
               Row(

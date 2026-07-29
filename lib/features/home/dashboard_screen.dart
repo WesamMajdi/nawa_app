@@ -1,14 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nawa_flutter/core/widgets/app_drawer.dart';
-import 'package:nawa_flutter/features/lesson_viewing/lesson_viewing_screen.dart';
-import 'package:nawa_flutter/features/notifications/notifications_screen.dart';
+import '../../core/blocs/dashboard/dashboard_bloc.dart';
+import '../../core/models/dashboard_model.dart';
 import '../../core/constants/constants.dart';
 import '../../core/helper/extension.dart';
 import '../../core/widgets/app_bottom_nav.dart';
+import '../lesson_viewing/lesson_viewing_screen.dart';
+import '../notifications/notifications_screen.dart';
 import 'widgets/progress_ring.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  @override
+  void initState() {
+    super.initState();
+    context.read<DashboardBloc>().add(DashboardLoadRequested());
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,7 +30,20 @@ class DashboardScreen extends StatelessWidget {
       body: SafeArea(
         child: Stack(
           children: [
-            _buildBody(),
+            BlocBuilder<DashboardBloc, DashboardState>(
+              builder: (context, state) {
+                if (state is DashboardLoading) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (state is DashboardLoaded) {
+                  return _buildBody(state);
+                }
+                if (state is DashboardError) {
+                  return Center(child: Text(state.message));
+                }
+                return const SizedBox.shrink();
+              },
+            ),
             const AppBottomNav(currentTab: NavTab.home),
           ],
         ),
@@ -25,7 +52,9 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBody() {
+  Widget _buildBody(DashboardLoaded state) {
+    final user = state.user;
+    final dashboard = state.dashboard;
     return ListView(
       padding: const EdgeInsets.only(
         left: AppSpacing.containerMargin,
@@ -34,21 +63,22 @@ class DashboardScreen extends StatelessWidget {
         bottom: 100,
       ),
       children: [
-        const _TopBar(),
+        _TopBar(),
         const SizedBox(height: AppSpacing.stackLG),
-        const _GreetingHeader(),
+        _GreetingHeader(name: user.name, streakDays: dashboard.stats.streakDays),
         const SizedBox(height: AppSpacing.gutter),
-        const _CurrentPathCard(),
+        if (dashboard.continueData != null)
+          _CurrentPathCard(continueData: dashboard.continueData!)
+        else
+          _EmptyPathCard(),
         const SizedBox(height: AppSpacing.gutter),
-        const _StatsGrid(),
+        _StatsGrid(stats: dashboard.stats),
       ],
     );
   }
 }
 
 class _TopBar extends StatelessWidget {
-  const _TopBar();
-
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -75,7 +105,9 @@ class _TopBar extends StatelessWidget {
 }
 
 class _GreetingHeader extends StatelessWidget {
-  const _GreetingHeader();
+  final String name;
+  final int streakDays;
+  const _GreetingHeader({required this.name, required this.streakDays});
 
   @override
   Widget build(BuildContext context) {
@@ -91,18 +123,21 @@ class _GreetingHeader extends StatelessWidget {
                   color: AppColors.onSurfaceVariant,
                 ),
               ),
-              Text('أهلاً بك، أحمد', style: AppTypography.headlineXL),
+              Text('أهلاً بك، $name', style: AppTypography.headlineXL),
             ],
           ),
         ),
         const SizedBox(width: AppSpacing.stackSM),
-        _StreakCounter(),
+        _StreakCounter(streakDays: streakDays),
       ],
     );
   }
 }
 
 class _StreakCounter extends StatelessWidget {
+  final int streakDays;
+  const _StreakCounter({required this.streakDays});
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -119,7 +154,7 @@ class _StreakCounter extends StatelessWidget {
           _PulsingFire(),
           const SizedBox(width: 6),
           Text(
-            '12',
+            '$streakDays',
             style: AppTypography.headlineMD.copyWith(color: AppColors.primary),
           ),
         ],
@@ -188,10 +223,12 @@ class _PulsingFireState extends State<_PulsingFire>
 }
 
 class _CurrentPathCard extends StatelessWidget {
-  const _CurrentPathCard();
+  final ContinueData continueData;
+  const _CurrentPathCard({required this.continueData});
 
   @override
   Widget build(BuildContext context) {
+    final pct = continueData.progressPct;
     return DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppRadius.xl),
@@ -212,22 +249,19 @@ class _CurrentPathCard extends StatelessWidget {
         padding: const EdgeInsets.all(AppSpacing.stackLG),
         child: Column(
           children: [
-            const ProgressRing(progress: 0.65, size: 128),
+            ProgressRing(progress: pct / 100.0, size: 128),
             const SizedBox(height: AppSpacing.stackMD),
             Row(
               children: [
                 Text(
-                  'الدرس 12 من 18',
+                  'الدرس ${continueData.lessonTitle}',
                   style: AppTypography.codeSM.copyWith(
                     color: AppColors.onSurfaceVariant,
                   ),
                 ),
                 const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: AppColors.primaryContainer.withAlpha(38),
                     borderRadius: BorderRadius.circular(AppRadius.full),
@@ -242,39 +276,28 @@ class _CurrentPathCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: AppSpacing.stackSM),
-            Text('تطوير تطبيقات Flutter', style: AppTypography.headlineLG),
+            Text(continueData.pathTitle, style: AppTypography.headlineLG),
             const SizedBox(height: AppSpacing.stackSM),
-            Text(
-              'تعلم كيفية بناء واجهات مستخدم معقدة وإدارة حالة التطبيق باستخدام Provider.',
-              style: AppTypography.bodyMD.copyWith(
-                color: AppColors.onSurfaceVariant,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
             const SizedBox(height: AppSpacing.stackMD),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
-                  context.push(const LessonViewingScreen(lessonId: '1'));
+                  context.push(LessonViewingScreen(lessonId: continueData.lessonId));
                 },
-                style:
-                    ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: AppColors.surfaceContainerLowest,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.lg),
-                      ),
-                      elevation: 0,
-                      textStyle: AppTypography.headlineMD,
-                    ).copyWith(
-                      shadowColor: WidgetStateProperty.all(Colors.transparent),
-                      surfaceTintColor: WidgetStateProperty.all(
-                        Colors.transparent,
-                      ),
-                    ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: AppColors.surfaceContainerLowest,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
+                  ),
+                  elevation: 0,
+                  textStyle: AppTypography.headlineMD,
+                ).copyWith(
+                  shadowColor: WidgetStateProperty.all(Colors.transparent),
+                  surfaceTintColor: WidgetStateProperty.all(Colors.transparent),
+                ),
                 child: const Text('أكمل التعلم'),
               ),
             ),
@@ -285,12 +308,46 @@ class _CurrentPathCard extends StatelessWidget {
   }
 }
 
+class _EmptyPathCard extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        border: Border.all(color: Colors.white.withAlpha(25)),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Colors.white.withAlpha(12), Colors.white.withAlpha(0)],
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.stackLG),
+        child: Column(
+          children: [
+            Icon(Icons.school_outlined, size: 64, color: AppColors.onSurfaceVariant.withAlpha(100)),
+            const SizedBox(height: AppSpacing.stackMD),
+            Text('لم تبدأ أي مسار بعد', style: AppTypography.headlineMD),
+            const SizedBox(height: AppSpacing.stackSM),
+            Text(
+              'استكشف المسارات المتاحة وابدأ رحلة التعلم',
+              style: AppTypography.bodyMD.copyWith(color: AppColors.onSurfaceVariant),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _StatsGrid extends StatelessWidget {
-  const _StatsGrid();
+  final DashboardStats stats;
+  const _StatsGrid({required this.stats});
 
   @override
   Widget build(BuildContext context) {
-    return const Column(
+    return Column(
       children: [
         Row(
           children: [
@@ -299,31 +356,38 @@ class _StatsGrid extends StatelessWidget {
                 icon: Icons.star_rounded,
                 iconColor: AppColors.primary,
                 label: 'نقاط الخبرة',
-                value: '2,450 XP',
+                value: '${stats.xp} XP',
               ),
             ),
-            SizedBox(width: AppSpacing.gutter),
+            const SizedBox(width: AppSpacing.gutter),
             Expanded(
               child: _StatCard(
                 icon: Icons.task_alt_rounded,
                 iconColor: AppColors.secondary,
                 label: 'الدروس المكتملة',
-                value: '48',
+                value: '${stats.lessonsCompleted}',
               ),
             ),
           ],
         ),
-        SizedBox(height: AppSpacing.gutter),
+        const SizedBox(height: AppSpacing.gutter),
         Row(
           children: [
-            Expanded(child: SizedBox.shrink()),
-            SizedBox(width: AppSpacing.gutter),
             Expanded(
               child: _StatCard(
                 icon: Icons.emoji_events_rounded,
                 iconColor: AppColors.tertiary,
                 label: 'التحديات الفائزة',
-                value: '7',
+                value: '${stats.challengesSolved}',
+              ),
+            ),
+            const SizedBox(width: AppSpacing.gutter),
+            Expanded(
+              child: _StatCard(
+                icon: Icons.trending_up_rounded,
+                iconColor: AppColors.primary,
+                label: 'الترتيب العالمي',
+                value: '#${stats.globalRank}',
               ),
             ),
           ],
