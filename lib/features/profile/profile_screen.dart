@@ -8,6 +8,7 @@ import 'package:nawa_flutter/core/models/user_models.dart';
 import 'package:nawa_flutter/core/repositories/user_repository.dart';
 import 'package:nawa_flutter/core/widgets/app_bottom_nav.dart';
 import 'package:nawa_flutter/core/widgets/app_drawer.dart';
+import '../account_settings/edit_profile/edit_profile_screen.dart';
 import 'package:go_router/go_router.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -232,7 +233,7 @@ class _ProfileHeader extends StatelessWidget {
                 children: [
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () => context.push(const EditProfileScreen()),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primaryContainer,
                         foregroundColor: AppColors.background,
