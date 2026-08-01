@@ -151,11 +151,11 @@ class _TopBar extends StatelessWidget {
       child: Row(
         children: [
           GestureDetector(
-            onTap: () => context.pop(),
+            onTap: () => Navigator.pop(context),
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(borderRadius: BorderRadius.circular(AppRadius.full)),
-              child: const Icon(Icons.arrow_forward, color: AppColors.primary),
+              child: const Icon(Icons.arrow_back, color: AppColors.primary),
             ),
           ),
           const SizedBox(width: AppSpacing.stackSM),
