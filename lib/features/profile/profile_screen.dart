@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nawa_flutter/core/constants/constants.dart';
+import 'package:nawa_flutter/core/blocs/community/community_bloc.dart';
+import 'package:nawa_flutter/core/models/post_model.dart';
 import 'package:nawa_flutter/core/models/user_model.dart';
 import 'package:nawa_flutter/core/models/user_models.dart';
 import 'package:nawa_flutter/core/repositories/user_repository.dart';
@@ -117,8 +119,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _AchievementsList(badges: _badges)
         else if (_selectedTab == 1 && _learning.isNotEmpty)
           _LearningList(learning: _learning)
+        else if (_selectedTab == 1)
+          const _EmptyLearningList()
         else
-          const SizedBox.shrink(),
+          const _MyPostsTab(),
         const SizedBox(height: 24),
       ],
     );
@@ -664,6 +668,256 @@ class _AchievementCard extends StatelessWidget {
   }
 }
 
+class _EmptyLearningList extends StatelessWidget {
+  const _EmptyLearningList();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          children: [
+            Icon(
+              Icons.school_outlined,
+              size: 48,
+              color: AppColors.onSurfaceVariant.withAlpha(100),
+            ),
+            const SizedBox(height: AppSpacing.stackMD),
+            Text(
+              'لم تبدأ أي مسار بعد',
+              style: AppTypography.bodyMD.copyWith(
+                color: AppColors.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MyPostsTab extends StatefulWidget {
+  const _MyPostsTab();
+
+  @override
+  State<_MyPostsTab> createState() => _MyPostsTabState();
+}
+
+class _MyPostsTabState extends State<_MyPostsTab> {
+  @override
+  void initState() {
+    super.initState();
+    context.read<CommunityBloc>().add(CommunityLoadMyPosts());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<CommunityBloc, CommunityState>(
+      builder: (context, state) {
+        if (state is CommunityMyPostsLoading) {
+          return const Padding(
+            padding: EdgeInsets.all(32),
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+        if (state is CommunityMyPostsError) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                children: [
+                  Text(
+                    state.message,
+                    style: AppTypography.bodyMD.copyWith(
+                      color: AppColors.onSurfaceVariant,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: AppSpacing.stackMD),
+                  ElevatedButton(
+                    onPressed: () => context
+                        .read<CommunityBloc>()
+                        .add(CommunityLoadMyPosts()),
+                    child: const Text('إعادة المحاولة'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+        if (state is CommunityMyPostsLoaded) {
+          final posts = state.posts;
+          if (posts.isEmpty) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.article_outlined,
+                      size: 48,
+                      color: AppColors.onSurfaceVariant.withAlpha(100),
+                    ),
+                    const SizedBox(height: AppSpacing.stackMD),
+                    Text(
+                      'لم تنشر أي منشور بعد',
+                      style: AppTypography.bodyMD.copyWith(
+                        color: AppColors.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+          return Column(
+            children: [
+              for (final post in posts)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.gutter),
+                  child: _MyPostCard(post: post),
+                ),
+            ],
+          );
+        }
+        return const SizedBox.shrink();
+      },
+    );
+  }
+}
+
+class _MyPostCard extends StatelessWidget {
+  final PostModel post;
+
+  const _MyPostCard({required this.post});
+
+  String get _typeLabel => switch (post.type) {
+        'question' => 'سؤال',
+        'discussion' => 'نقاش',
+        'achievement' => 'إنجاز',
+        'project' => 'مشروع',
+        _ => post.type,
+      };
+
+  String _timeAgo(DateTime? date) {
+    if (date == null) return '';
+    final now = DateTime.now();
+    final diff = now.difference(date);
+    if (diff.inMinutes < 1) return 'الآن';
+    if (diff.inMinutes < 60) return 'منذ ${diff.inMinutes} د';
+    if (diff.inHours < 24) return 'منذ ${diff.inHours} س';
+    if (diff.inDays == 1) return 'الأمس';
+    if (diff.inDays < 7) return 'منذ ${diff.inDays} أيام';
+    return '${date.day}/${date.month}/${date.year}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        color: AppColors.surfaceContainerHigh.withAlpha(153),
+        border: Border.all(color: AppColors.onSurfaceVariant.withAlpha(12)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(AppRadius.full),
+                  color: AppColors.primary.withAlpha(25),
+                ),
+                child: Text(
+                  _typeLabel,
+                  style: AppTypography.labelMD.copyWith(
+                    color: AppColors.primary,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+              const Spacer(),
+              Text(
+                _timeAgo(post.createdAt),
+                style: AppTypography.labelMD.copyWith(
+                  color: AppColors.onSurfaceVariant,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.stackMD),
+          Text(post.title ?? post.body, style: AppTypography.headlineMD),
+          if (post.title != null && post.body.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.stackSM),
+            Text(
+              post.body,
+              style: AppTypography.bodyMD.copyWith(
+                color: AppColors.onSurfaceVariant,
+              ),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+          const SizedBox(height: AppSpacing.stackMD),
+          Row(
+            children: [
+              GestureDetector(
+                onTap: () => context.read<CommunityBloc>().add(
+                      CommunityMyPostsToggleLike(
+                        postId: post.id,
+                        isLiked: post.isLikedByMe,
+                      ),
+                    ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      post.isLikedByMe
+                          ? Icons.favorite
+                          : Icons.favorite_border,
+                      size: 20,
+                      color: post.isLikedByMe
+                          ? AppColors.primary
+                          : AppColors.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '${post.likesCount}',
+                      style: AppTypography.labelMD.copyWith(
+                        color: AppColors.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: AppSpacing.stackLG),
+              Icon(
+                Icons.chat_bubble_outline,
+                size: 20,
+                color: AppColors.onSurfaceVariant,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                '${post.repliesCount}',
+                style: AppTypography.labelMD.copyWith(
+                  color: AppColors.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
 class _LearningList extends StatelessWidget {
   final List<UserLearningModel> learning;
 

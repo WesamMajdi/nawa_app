@@ -35,4 +35,8 @@ class CertificateRepository {
     final response = await _api.get(ApiEndpoints.mePlanUsage);
     return PlanUsageModel.fromJson(response.data);
   }
+
+  Future<List<int>> downloadCertificate(String id) async {
+    return _api.getBytes('/certificates/$id/download');
+  }
 }

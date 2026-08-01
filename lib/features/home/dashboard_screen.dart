@@ -6,6 +6,7 @@ import '../../core/models/dashboard_model.dart';
 import '../../core/constants/constants.dart';
 import '../../core/helper/extension.dart';
 import '../../core/widgets/app_bottom_nav.dart';
+import '../challenge_details/challenge_details_screen.dart';
 import '../lesson_viewing/lesson_viewing_screen.dart';
 import '../notifications/notifications_screen.dart';
 import 'widgets/progress_ring.dart';
@@ -72,6 +73,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         else
           _EmptyPathCard(),
         const SizedBox(height: AppSpacing.gutter),
+        if (dashboard.dailyChallenge != null) ...[
+          _DailyChallengeCard(dailyChallenge: dashboard.dailyChallenge!),
+          const SizedBox(height: AppSpacing.gutter),
+        ],
         _StatsGrid(stats: dashboard.stats),
       ],
     );
@@ -337,6 +342,163 @@ class _EmptyPathCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _DailyChallengeCard extends StatelessWidget {
+  final DailyChallengeModel dailyChallenge;
+  const _DailyChallengeCard({required this.dailyChallenge});
+
+  String get _difficultyLabel => switch (dailyChallenge.difficulty) {
+        'easy' => 'سهل',
+        'medium' => 'متوسط',
+        'hard' => 'متقدم',
+        _ => dailyChallenge.difficulty ?? 'تحدي',
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    final challenge = dailyChallenge;
+    return GestureDetector(
+      onTap: () => context.push(
+        ChallengeDetailsScreen(challengeId: challenge.id),
+      ),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          border: Border.all(color: Colors.white.withAlpha(25)),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              AppColors.primary.withAlpha(38),
+              Colors.white.withAlpha(8),
+            ],
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(AppRadius.full),
+                      color: AppColors.primary.withAlpha(30),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.bolt_rounded,
+                          size: 16,
+                          color: AppColors.primary,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          challenge.solved ? 'تم الحل اليوم ✓' : 'تحدّي اليوم',
+                          style: AppTypography.labelMD.copyWith(
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    _difficultyLabel,
+                    style: AppTypography.labelMD.copyWith(
+                      color: AppColors.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.stackMD),
+              Text(
+                challenge.title,
+                style: AppTypography.headlineMD,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              if (challenge.description != null) ...[
+                const SizedBox(height: AppSpacing.stackSM),
+                Text(
+                  challenge.description!,
+                  style: AppTypography.bodyMD.copyWith(
+                    color: AppColors.onSurfaceVariant,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+              const SizedBox(height: AppSpacing.stackMD),
+              Row(
+                children: [
+                  _ChallengeMeta(
+                    icon: Icons.emoji_events_rounded,
+                    text: '${challenge.xpReward ?? 0} XP',
+                  ),
+                  const SizedBox(width: AppSpacing.stackMD),
+                  if (challenge.languageCode != null)
+                    _ChallengeMeta(
+                      icon: Icons.code_rounded,
+                      text: challenge.languageCode!.toUpperCase(),
+                    ),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
+                      color: AppColors.primary,
+                    ),
+                    child: Text(
+                      challenge.solved ? 'عرض التحدي' : 'ابدأ الآن',
+                      style: AppTypography.headlineMD.copyWith(
+                        color: AppColors.background,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ChallengeMeta extends StatelessWidget {
+  final IconData icon;
+  final String text;
+
+  const _ChallengeMeta({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 18, color: AppColors.onSurfaceVariant),
+        const SizedBox(width: 6),
+        Text(
+          text,
+          style: AppTypography.labelMD.copyWith(
+            color: AppColors.onSurfaceVariant,
+            fontFamily: AppTypography.fontMono,
+          ),
+        ),
+      ],
     );
   }
 }

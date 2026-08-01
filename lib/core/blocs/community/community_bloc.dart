@@ -50,6 +50,19 @@ class CommunityToggleLike extends CommunityEvent {
   List<Object?> get props => [postId, isLiked];
 }
 
+class CommunityLoadMyPosts extends CommunityEvent {}
+
+class CommunityMyPostsToggleLike extends CommunityEvent {
+  final String postId;
+  final bool isLiked;
+  const CommunityMyPostsToggleLike({
+    required this.postId,
+    required this.isLiked,
+  });
+  @override
+  List<Object?> get props => [postId, isLiked];
+}
+
 // States
 sealed class CommunityState extends Equatable {
   const CommunityState();
@@ -80,9 +93,27 @@ class CommunityError extends CommunityState {
   List<Object?> get props => [message];
 }
 
+class CommunityMyPostsLoading extends CommunityState {}
+
+class CommunityMyPostsLoaded extends CommunityState {
+  final List<PostModel> posts;
+  const CommunityMyPostsLoaded({required this.posts});
+  @override
+  List<Object?> get props => [posts];
+}
+
+class CommunityMyPostsError extends CommunityState {
+  final String message;
+  const CommunityMyPostsError(this.message);
+  @override
+  List<Object?> get props => [message];
+}
+
 // BLoC
 class CommunityBloc extends Bloc<CommunityEvent, CommunityState> {
   final CommunityRepository _repository;
+  final Set<String> _pendingLikes = {};
+  final Set<String> _pendingMyLikes = {};
 
   CommunityBloc(this._repository) : super(CommunityInitial()) {
     on<CommunityLoadPosts>(_onLoadPosts);
@@ -90,6 +121,8 @@ class CommunityBloc extends Bloc<CommunityEvent, CommunityState> {
     on<CommunityLoadTrending>(_onLoadTrending);
     on<CommunityCreatePost>(_onCreatePost);
     on<CommunityToggleLike>(_onToggleLike);
+    on<CommunityLoadMyPosts>(_onLoadMyPosts);
+    on<CommunityMyPostsToggleLike>(_onMyPostsToggleLike);
   }
 
   Future<void> _onLoadPosts(CommunityLoadPosts event, Emitter<CommunityState> emit) async {
@@ -179,14 +212,71 @@ class CommunityBloc extends Bloc<CommunityEvent, CommunityState> {
   }
 
   Future<void> _onToggleLike(CommunityToggleLike event, Emitter<CommunityState> emit) async {
-    emit(CommunityLoading());
+    final current = state;
+    if (current is! CommunityLoaded) return;
+    if (!_pendingLikes.add(event.postId)) return;
+
+    final previousPosts = current.posts;
+    final optimisticPosts = current.posts
+        .map((p) => p.id == event.postId
+            ? p.copyWithLike(
+                liked: !event.isLiked,
+                likesCount: p.likesCount + (event.isLiked ? -1 : 1),
+              )
+            : p)
+        .toList();
+    emit(CommunityLoaded(
+      posts: optimisticPosts,
+      trending: current.trending,
+      hasMore: current.hasMore,
+      cursor: current.cursor,
+    ));
+
     try {
-      if (event.isLiked) {
-        await _repository.removeLike(event.postId);
-      } else {
-        await _repository.toggleLike(event.postId);
+      final result = event.isLiked
+          ? await _repository.removeLike(event.postId)
+          : await _repository.toggleLike(event.postId);
+      final live = state;
+      if (live is CommunityLoaded) {
+        final synced = live.posts
+            .map((p) => p.id == event.postId
+                ? p.copyWithLike(
+                    liked: result['liked'] as bool? ?? !event.isLiked,
+                    likesCount:
+                        result['likesCount'] as int? ?? p.likesCount,
+                  )
+                : p)
+            .toList();
+        emit(CommunityLoaded(
+          posts: synced,
+          trending: live.trending,
+          hasMore: live.hasMore,
+          cursor: live.cursor,
+        ));
       }
-      add(CommunityLoadPosts());
+    } catch (_) {
+      final live = state;
+      if (live is CommunityLoaded) {
+        emit(CommunityLoaded(
+          posts: previousPosts,
+          trending: live.trending,
+          hasMore: live.hasMore,
+          cursor: live.cursor,
+        ));
+      }
+    } finally {
+      _pendingLikes.remove(event.postId);
+    }
+  }
+
+  Future<void> _onLoadMyPosts(
+    CommunityLoadMyPosts event,
+    Emitter<CommunityState> emit,
+  ) async {
+    emit(CommunityMyPostsLoading());
+    try {
+      final posts = await _repository.getPosts(author: 'me');
+      emit(CommunityMyPostsLoaded(posts: posts.items));
     } catch (e) {
       String message;
       if (e is ApiException) {
@@ -194,7 +284,54 @@ class CommunityBloc extends Bloc<CommunityEvent, CommunityState> {
       } else {
         message = 'حدث خطأ غير متوقع';
       }
-      emit(CommunityError(message));
+      emit(CommunityMyPostsError(message));
+    }
+  }
+
+  Future<void> _onMyPostsToggleLike(
+    CommunityMyPostsToggleLike event,
+    Emitter<CommunityState> emit,
+  ) async {
+    final current = state;
+    if (current is! CommunityMyPostsLoaded) return;
+    if (!_pendingMyLikes.add(event.postId)) return;
+
+    final previousPosts = current.posts;
+    final optimisticPosts = current.posts
+        .map((p) => p.id == event.postId
+            ? p.copyWithLike(
+                liked: !event.isLiked,
+                likesCount: p.likesCount + (event.isLiked ? -1 : 1),
+              )
+            : p)
+        .toList();
+    emit(CommunityMyPostsLoaded(posts: optimisticPosts));
+
+    try {
+      final result = event.isLiked
+          ? await _repository.removeLike(event.postId)
+          : await _repository.toggleLike(event.postId);
+      final live = state;
+      if (live is CommunityMyPostsLoaded) {
+        emit(CommunityMyPostsLoaded(
+          posts: live.posts
+              .map((p) => p.id == event.postId
+                  ? p.copyWithLike(
+                      liked: result['liked'] as bool? ?? !event.isLiked,
+                      likesCount:
+                          result['likesCount'] as int? ?? p.likesCount,
+                    )
+                  : p)
+              .toList(),
+        ));
+      }
+    } catch (_) {
+      final live = state;
+      if (live is CommunityMyPostsLoaded) {
+        emit(CommunityMyPostsLoaded(posts: previousPosts));
+      }
+    } finally {
+      _pendingMyLikes.remove(event.postId);
     }
   }
 }

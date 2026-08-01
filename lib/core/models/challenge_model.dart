@@ -55,6 +55,27 @@ class ChallengeModel {
       joinedOrSolved: json['joinedOrSolved'] as bool? ?? false,
     );
   }
+
+  ChallengeModel copyWith({bool? joinedOrSolved}) {
+    return ChallengeModel(
+      id: id,
+      kind: kind,
+      category: category,
+      title: title,
+      description: description,
+      participantsCount: participantsCount,
+      endsAt: endsAt,
+      xpReward: xpReward,
+      prize: prize,
+      badgeReward: badgeReward,
+      difficulty: difficulty,
+      languageCode: languageCode,
+      imageUrl: imageUrl,
+      color: color,
+      sponsorName: sponsorName,
+      joinedOrSolved: joinedOrSolved ?? this.joinedOrSolved,
+    );
+  }
 }
 
 class ChallengeDetailModel {

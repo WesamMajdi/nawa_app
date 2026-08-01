@@ -7,6 +7,9 @@ import '../../core/helper/extension.dart';
 import '../../core/models/user_model.dart';
 import '../../features/auth/login/login_screen.dart';
 import '../../features/profile/profile_screen.dart';
+import 'change_email/change_email_sheet.dart';
+import 'change_password/change_password_sheet.dart';
+import 'edit_profile/edit_profile_screen.dart';
 
 class AccountSettingsScreen extends StatefulWidget {
   const AccountSettingsScreen({super.key});
@@ -264,7 +267,39 @@ class _SettingsLinks extends StatelessWidget {
             icon: Icons.person,
             title: 'تعديل الملف الشخصي',
             hasDivider: true,
-            onTap: () => context.push(const ProfileScreen()),
+            onTap: () => context.push(const EditProfileScreen()),
+          ),
+          _SettingsTile(
+            icon: Icons.alternate_email,
+            title: 'تغيير البريد الإلكتروني',
+            hasDivider: true,
+            onTap: () => showModalBottomSheet<void>(
+              context: context,
+              backgroundColor: AppColors.surfaceContainer,
+              isScrollControlled: true,
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(AppRadius.xl),
+                ),
+              ),
+              builder: (_) => const ChangeEmailSheet(),
+            ),
+          ),
+          _SettingsTile(
+            icon: Icons.lock_outline,
+            title: 'تغيير كلمة المرور',
+            hasDivider: true,
+            onTap: () => showModalBottomSheet<void>(
+              context: context,
+              backgroundColor: AppColors.surfaceContainer,
+              isScrollControlled: true,
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(AppRadius.xl),
+                ),
+              ),
+              builder: (_) => const ChangePasswordSheet(),
+            ),
           ),
           _SettingsTile(
             icon: Icons.notifications_outlined,
@@ -279,7 +314,7 @@ class _SettingsLinks extends StatelessWidget {
             onTap: () {},
           ),
           _SettingsTile(
-            icon: Icons.lock_outline,
+            icon: Icons.shield_outlined,
             title: 'الخصوصية',
             hasDivider: false,
             onTap: () {},

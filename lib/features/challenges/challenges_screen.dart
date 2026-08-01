@@ -281,10 +281,11 @@ class _ChallengeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasEnded = challenge.endsAt != null && challenge.endsAt!.isBefore(DateTime.now());
+    final isHackathon = challenge.kind == 'hackathon';
 
     if (isFeatured) {
       return GestureDetector(
-        onTap: () => context.go('/challenge/${challenge.id}'),
+        onTap: isHackathon ? null : () => context.go('/challenge/${challenge.id}'),
         child: Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
@@ -314,6 +315,15 @@ class _ChallengeCard extends StatelessWidget {
                       color: AppColors.primary,
                       bgColor: AppColors.surfaceVariant,
                     ),
+                  if (isHackathon) ...[
+                    const SizedBox(width: AppSpacing.gutter),
+                    _Badge(
+                      icon: Icons.group_work,
+                      label: 'هاكاثون',
+                      color: AppColors.tertiary,
+                      bgColor: AppColors.tertiaryContainer,
+                    ),
+                  ],
                 ],
               ),
               const SizedBox(height: AppSpacing.stackMD),
@@ -352,7 +362,18 @@ class _ChallengeCard extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () => context.go('/challenge/${challenge.id}'),
+                  onPressed: isHackathon
+                      ? () {
+                          if (challenge.joinedOrSolved) return;
+                          context.read<ChallengeBloc>().add(ChallengeHackathonJoinRequested(challenge.id));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('تم الانضمام للهاكاثون ✓'),
+                              backgroundColor: AppColors.primaryContainer,
+                            ),
+                          );
+                        }
+                      : () => context.go('/challenge/${challenge.id}'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryContainer,
                     foregroundColor: AppColors.background,
@@ -364,7 +385,11 @@ class _ChallengeCard extends StatelessWidget {
                     shadowColor: WidgetStateProperty.all(Colors.transparent),
                     surfaceTintColor: WidgetStateProperty.all(Colors.transparent),
                   ),
-                  child: Text(challenge.joinedOrSolved ? 'عرض التحدي' : 'انضم للتحدي الآن'),
+                  child: Text(
+                    isHackathon
+                        ? (challenge.joinedOrSolved ? 'تم الانضمام ✓' : 'انضم للهاكاثون')
+                        : (challenge.joinedOrSolved ? 'عرض التحدي' : 'انضم للتحدي الآن'),
+                  ),
                 ),
               ),
             ],
@@ -374,7 +399,7 @@ class _ChallengeCard extends StatelessWidget {
     }
 
     return GestureDetector(
-      onTap: () => context.go('/challenge/${challenge.id}'),
+      onTap: isHackathon ? null : () => context.go('/challenge/${challenge.id}'),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -392,7 +417,7 @@ class _ChallengeCard extends StatelessWidget {
                 border: Border.all(color: AppColors.outlineVariant.withAlpha(77)),
               ),
               child: Icon(
-                challenge.kind == 'hackathon' ? Icons.group_work : Icons.code,
+                isHackathon ? Icons.group_work : Icons.code,
                 color: AppColors.primary, size: 24,
               ),
             ),
@@ -435,6 +460,49 @@ class _ChallengeCard extends StatelessWidget {
               _timeRemaining(challenge.endsAt),
               style: AppTypography.codeSM.copyWith(color: AppColors.onSurfaceVariant, fontSize: 12),
             ),
+            if (isHackathon) ...[
+              const SizedBox(width: AppSpacing.gutter),
+              SizedBox(
+                height: 36,
+                child: OutlinedButton(
+                  onPressed: challenge.joinedOrSolved
+                      ? () {
+                          context.read<ChallengeBloc>().add(ChallengeHackathonRemindRequested(challenge.id));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('تم إرسال التذكير ✓'),
+                              backgroundColor: AppColors.primaryContainer,
+                            ),
+                          );
+                        }
+                      : () {
+                          context.read<ChallengeBloc>().add(ChallengeHackathonJoinRequested(challenge.id));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('تم الانضمام للهاكاثون ✓'),
+                              backgroundColor: AppColors.primaryContainer,
+                            ),
+                          );
+                        },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    side: BorderSide(color: AppColors.primaryContainer),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
+                    ),
+                    textStyle: AppTypography.headlineMD,
+                  ).copyWith(
+                    padding: WidgetStateProperty.all(
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    ),
+                  ),
+                  child: Text(
+                    challenge.joinedOrSolved ? 'تذكيري' : 'انضم',
+                    style: AppTypography.headlineMD.copyWith(fontSize: 12),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),

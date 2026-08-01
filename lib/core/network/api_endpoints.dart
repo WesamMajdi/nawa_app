@@ -42,6 +42,8 @@ class ApiEndpoints {
 
   // Hackathons
   static const String hackathons = '/hackathons';
+  static String hackathonJoin(String id) => '/hackathons/$id/join';
+  static String hackathonRemind(String id) => '/hackathons/$id/remind';
 
   // Community
   static const String communityPosts = '/community/posts';

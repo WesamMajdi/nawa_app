@@ -50,6 +50,18 @@ class ApiClient {
     }
   }
 
+  Future<List<int>> getBytes(String path) async {
+    try {
+      final response = await _dio.get<List<int>>(
+        path,
+        options: Options(responseType: ResponseType.bytes),
+      );
+      return response.data ?? const [];
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
   Future<Response> post(String path, {dynamic data}) async {
     try {
       return await _dio.post(path, data: data);

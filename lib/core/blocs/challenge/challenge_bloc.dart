@@ -45,6 +45,20 @@ class ChallengeSubmitRequested extends ChallengeEvent {
   List<Object?> get props => [id, sourceCode, languageCode];
 }
 
+class ChallengeHackathonJoinRequested extends ChallengeEvent {
+  final String id;
+  const ChallengeHackathonJoinRequested(this.id);
+  @override
+  List<Object?> get props => [id];
+}
+
+class ChallengeHackathonRemindRequested extends ChallengeEvent {
+  final String id;
+  const ChallengeHackathonRemindRequested(this.id);
+  @override
+  List<Object?> get props => [id];
+}
+
 // States
 sealed class ChallengeState extends Equatable {
   const ChallengeState();
@@ -94,17 +108,15 @@ class ChallengeBloc extends Bloc<ChallengeEvent, ChallengeState> {
     on<ChallengeFeedLoadMore>(_onLoadMore);
     on<ChallengeDetailLoadRequested>(_onLoadDetail);
     on<ChallengeSubmitRequested>(_onSubmit);
+    on<ChallengeHackathonJoinRequested>(_onHackathonJoin);
+    on<ChallengeHackathonRemindRequested>(_onHackathonRemind);
   }
 
   Future<void> _onLoadFeed(ChallengeFeedLoadRequested event, Emitter<ChallengeState> emit) async {
     emit(ChallengeLoading());
     try {
-      final result = await _repository.getFeed(category: event.category);
-      emit(ChallengeFeedLoaded(
-        challenges: result.items,
-        hasMore: result.pageInfo.hasNext,
-        cursor: result.pageInfo.nextCursor,
-      ));
+      final challenges = await _repository.getFeed(category: event.category);
+      emit(ChallengeFeedLoaded(challenges: challenges));
     } catch (e) {
       String message;
       if (e is ApiException) {
@@ -120,15 +132,11 @@ class ChallengeBloc extends Bloc<ChallengeEvent, ChallengeState> {
     final current = state;
     if (current is! ChallengeFeedLoaded || !current.hasMore) return;
     try {
-      final result = await _repository.getFeed(
+      final challenges = await _repository.getFeed(
         category: event.category,
         cursor: current.cursor,
       );
-      emit(ChallengeFeedLoaded(
-        challenges: [...current.challenges, ...result.items],
-        hasMore: result.pageInfo.hasNext,
-        cursor: result.pageInfo.nextCursor,
-      ));
+      emit(ChallengeFeedLoaded(challenges: [...current.challenges, ...challenges]));
     } catch (_) {
       emit(current);
     }
@@ -168,5 +176,51 @@ class ChallengeBloc extends Bloc<ChallengeEvent, ChallengeState> {
       }
       emit(ChallengeError(message));
     }
+  }
+
+  Future<void> _onHackathonJoin(
+    ChallengeHackathonJoinRequested event,
+    Emitter<ChallengeState> emit,
+  ) async {
+    final current = state;
+    if (current is! ChallengeFeedLoaded) return;
+    final index = current.challenges.indexWhere((c) => c.id == event.id);
+    if (index < 0) return;
+    final previous = current.challenges[index];
+    final optimistic = previous.copyWith(joinedOrSolved: true);
+    emit(ChallengeFeedLoaded(
+      challenges: [
+        ...current.challenges.sublist(0, index),
+        optimistic,
+        ...current.challenges.sublist(index + 1),
+      ],
+      hasMore: current.hasMore,
+      cursor: current.cursor,
+    ));
+    try {
+      await _repository.joinHackathon(event.id);
+    } catch (_) {
+      final live = state;
+      if (live is ChallengeFeedLoaded) {
+        emit(ChallengeFeedLoaded(
+          challenges: [
+            ...live.challenges.sublist(0, index),
+            previous,
+            ...live.challenges.sublist(index + 1),
+          ],
+          hasMore: live.hasMore,
+          cursor: live.cursor,
+        ));
+      }
+    }
+  }
+
+  Future<void> _onHackathonRemind(
+    ChallengeHackathonRemindRequested event,
+    Emitter<ChallengeState> emit,
+  ) async {
+    try {
+      await _repository.remindHackathon(event.id);
+    } catch (_) {}
   }
 }

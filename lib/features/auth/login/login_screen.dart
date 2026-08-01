@@ -7,6 +7,7 @@ import '../../../core/helper/extension.dart';
 import '../../home/dashboard_screen.dart';
 import '../widgets/auth_button.dart';
 import '../widgets/auth_field.dart';
+import '../forgot_password/forgot_password_screen.dart';
 import '../signup/signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -169,7 +170,7 @@ class _LoginScreenState extends State<LoginScreen> {
               Align(
                 alignment: AlignmentDirectional.centerStart,
                 child: TextButton(
-                  onPressed: () {},
+                  onPressed: () => context.push(const ForgotPasswordScreen()),
                   child: Text(
                     'نسيت كلمة السر؟',
                     style: AppTypography.labelMD.copyWith(

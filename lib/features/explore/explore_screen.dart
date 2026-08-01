@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/blocs/path/path_bloc.dart';
@@ -33,51 +35,133 @@ class _Body extends StatefulWidget {
 
 class _BodyState extends State<_Body> {
   String? _selectedTag;
+  final ScrollController _scrollController = ScrollController();
+  final TextEditingController _searchController = TextEditingController();
+  Timer? _searchDebounce;
+  bool _showAppBarTitle = false;
 
   static const _tags = ['الكل', 'Flutter', 'Python', 'Web', 'AI'];
 
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScrollChanged);
     context.read<PathBloc>().add(PathListLoadRequested());
   }
 
   @override
+  void dispose() {
+    _scrollController.removeListener(_onScrollChanged);
+    _scrollController.dispose();
+    _searchController.dispose();
+    _searchDebounce?.cancel();
+    super.dispose();
+  }
+
+  void _onScrollChanged() {
+    final show = _scrollController.hasClients && _scrollController.offset > 120;
+    if (show != _showAppBarTitle) {
+      setState(() => _showAppBarTitle = show);
+    }
+  }
+
+  void _onSearchChanged(String value) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 400), () {
+      if (!mounted) return;
+      context.read<PathBloc>().add(PathListLoadRequested(
+            tag: _selectedTag,
+            query: value.trim(),
+          ));
+    });
+  }
+
+  void _clearSearch() {
+    _searchController.clear();
+    _searchDebounce?.cancel();
+    context.read<PathBloc>().add(PathListLoadRequested(tag: _selectedTag));
+  }
+
+  Future<void> _openPath(PathCardModel path) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => PathDetailsScreen(pathSlug: path.slug),
+      ),
+    );
+    if (!mounted) return;
+    context.read<PathBloc>().add(PathListLoadRequested(
+          tag: _selectedTag,
+          query: _searchController.text.trim(),
+        ));
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        const Padding(
-          padding: EdgeInsets.only(
-            left: AppSpacing.containerMargin,
-            right: AppSpacing.containerMargin,
-            top: 88,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _Header(),
-              SizedBox(height: AppSpacing.stackLG),
-              _SearchBar(),
-            ],
+    return CustomScrollView(
+      controller: _scrollController,
+      slivers: [
+        SliverAppBar(
+          pinned: true,
+          expandedHeight: 208,
+          backgroundColor: AppColors.background,
+          surfaceTintColor: Colors.transparent,
+          scrolledUnderElevation: 0,
+          elevation: 0,
+          title: _showAppBarTitle
+              ? Text(
+                  'استكشاف المسارات',
+                  style: AppTypography.headlineMD.copyWith(
+                    color: AppColors.onSurface,
+                  ),
+                )
+              : null,
+          flexibleSpace: FlexibleSpaceBar(
+            collapseMode: CollapseMode.pin,
+            background: Padding(
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.containerMargin,
+                MediaQuery.paddingOf(context).top + 16,
+                AppSpacing.containerMargin,
+                16,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const _Header(),
+                  const SizedBox(height: AppSpacing.stackLG),
+                  _SearchBar(
+                    controller: _searchController,
+                    onChanged: _onSearchChanged,
+                    onClear: _clearSearch,
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
-        const SizedBox(height: AppSpacing.stackLG),
-        _CategoryChips(
-          selectedTag: _selectedTag,
-          onSelect: (tag) {
-            setState(() => _selectedTag = tag);
-            context.read<PathBloc>().add(PathListLoadRequested(tag: tag));
-          },
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              vertical: AppSpacing.stackMD,
+            ),
+            child: _CategoryChips(
+              selectedTag: _selectedTag,
+              onSelect: (tag) {
+                setState(() => _selectedTag = tag);
+                context.read<PathBloc>().add(PathListLoadRequested(
+                      tag: tag,
+                      query: _searchController.text.trim(),
+                    ));
+              },
+            ),
+          ),
         ),
-        const SizedBox(height: AppSpacing.stackLG),
-        Expanded(
-          child: BlocBuilder<PathBloc, PathState>(
-            builder: (context, state) {
-              if (state is PathLoading) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (state is PathError) {
-                return Center(
+        BlocBuilder<PathBloc, PathState>(
+          builder: (context, state) {
+            if (state is PathError) {
+              return SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -89,31 +173,45 @@ class _BodyState extends State<_Body> {
                       ),
                       const SizedBox(height: AppSpacing.stackMD),
                       ElevatedButton(
-                        onPressed: () => context
-                            .read<PathBloc>()
-                            .add(PathListLoadRequested(tag: _selectedTag)),
+                        onPressed: () => context.read<PathBloc>().add(
+                              PathListLoadRequested(
+                                tag: _selectedTag,
+                                query: _searchController.text.trim(),
+                              ),
+                            ),
                         child: const Text('إعادة المحاولة'),
                       ),
                     ],
                   ),
-                );
-              }
-              final paths = state is PathListLoaded ? state.paths : const <PathCardModel>[];
-              return ListView(
-                padding: const EdgeInsets.only(
-                  left: AppSpacing.containerMargin,
-                  right: AppSpacing.containerMargin,
-                  bottom: 104,
                 ),
+              );
+            }
+            if (state is! PathListLoaded) {
+              return const SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(child: CircularProgressIndicator()),
+              );
+            }
+            final paths = state.paths;
+            return SliverPadding(
+              padding: const EdgeInsets.only(
+                left: AppSpacing.containerMargin,
+                right: AppSpacing.containerMargin,
+                bottom: 104,
+              ),
+              sliver: SliverList.list(
                 children: [
                   for (final path in paths) ...[
-                    _CourseCard(path: path),
+                    _CourseCard(
+                      path: path,
+                      onTap: () => _openPath(path),
+                    ),
                     const SizedBox(height: AppSpacing.gutter),
                   ],
                 ],
-              );
-            },
-          ),
+              ),
+            );
+          },
         ),
       ],
     );
@@ -143,35 +241,57 @@ class _Header extends StatelessWidget {
 }
 
 class _SearchBar extends StatelessWidget {
-  const _SearchBar();
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onClear;
+
+  const _SearchBar({
+    required this.controller,
+    required this.onChanged,
+    required this.onClear,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return TextField(
-      textDirection: TextDirection.rtl,
-      style: AppTypography.bodyMD.copyWith(color: AppColors.onSurface),
-      decoration: InputDecoration(
-        hintText: 'ابحث عن دورة، تقنية، أو مدرب...',
-        hintStyle: AppTypography.bodyMD.copyWith(
-          color: AppColors.onSurfaceVariant.withAlpha(128),
-        ),
-        prefixIcon: const Icon(Icons.search, color: AppColors.onSurfaceVariant),
-        filled: true,
-        fillColor: AppColors.surfaceContainerHighest,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.xl),
-          borderSide: const BorderSide(color: AppColors.outlineVariant),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.xl),
-          borderSide: const BorderSide(color: AppColors.outlineVariant),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.xl),
-          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
-        ),
-        contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-      ),
+    return ValueListenableBuilder<TextEditingValue>(
+      valueListenable: controller,
+      builder: (context, value, _) {
+        return TextField(
+          controller: controller,
+          textDirection: TextDirection.rtl,
+          style: AppTypography.bodyMD.copyWith(color: AppColors.onSurface),
+          onChanged: onChanged,
+          textInputAction: TextInputAction.search,
+          decoration: InputDecoration(
+            hintText: 'ابحث عن دورة، تقنية، أو مدرب...',
+            hintStyle: AppTypography.bodyMD.copyWith(
+              color: AppColors.onSurfaceVariant.withAlpha(128),
+            ),
+            prefixIcon: const Icon(Icons.search, color: AppColors.onSurfaceVariant),
+            suffixIcon: value.text.isNotEmpty
+                ? IconButton(
+                    icon: const Icon(Icons.close, color: AppColors.onSurfaceVariant),
+                    onPressed: onClear,
+                  )
+                : null,
+            filled: true,
+            fillColor: AppColors.surfaceContainerHighest,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadius.xl),
+              borderSide: const BorderSide(color: AppColors.outlineVariant),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadius.xl),
+              borderSide: const BorderSide(color: AppColors.outlineVariant),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadius.xl),
+              borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+            ),
+            contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+          ),
+        );
+      },
     );
   }
 }
@@ -245,8 +365,9 @@ class _Chip extends StatelessWidget {
 
 class _CourseCard extends StatelessWidget {
   final PathCardModel path;
+  final VoidCallback onTap;
 
-  const _CourseCard({required this.path});
+  const _CourseCard({required this.path, required this.onTap});
 
   Color get _levelColor => switch (path.level) {
         'beginner' => AppColors.secondary,
@@ -265,7 +386,7 @@ class _CourseCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => context.push(PathDetailsScreen(pathSlug: path.slug)),
+      onTap: onTap,
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: const Color(0xFF1E1C29),

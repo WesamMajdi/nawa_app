@@ -56,8 +56,16 @@ class AuthRepository {
     await _api.clearTokens();
   }
 
-  Future<void> forgotPassword(String email) async {
-    await _api.post(ApiEndpoints.forgotPassword, data: {'email': email});
+  Future<String?> forgotPassword(String email) async {
+    final response = await _api.post(ApiEndpoints.forgotPassword, data: {'email': email});
+    final data = response.data;
+    if (data is Map<String, dynamic>) {
+      final token = data['token'];
+      if (token is String && token.isNotEmpty) {
+        return token;
+      }
+    }
+    return null;
   }
 
   Future<void> resetPassword({

@@ -1,9 +1,14 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../core/blocs/certificate/certificate_bloc.dart';
 import '../../core/constants/constants.dart';
 import '../../core/models/plan_model.dart';
+import '../../core/repositories/certificate_repository.dart';
 
 class CertificatesStoreScreen extends StatefulWidget {
   const CertificatesStoreScreen({super.key});
@@ -27,15 +32,55 @@ class _CertificatesStoreScreenState extends State<CertificatesStoreScreen> {
     return 'تم الإنجاز: ${date.day} ${_monthName(date.month)} ${date.year}';
   }
 
-  String _monthName(int month) {
-    const months = [
-      'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
-      'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
-    ];
-    return months[month - 1];
-  }
+   String _monthName(int month) {
+     const months = [
+       'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
+       'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
+     ];
+     return months[month - 1];
+   }
 
-  IconData _iconForCertificate(String title, String? pathTitle) {
+   static Future<void> _downloadCertificate(
+     BuildContext context,
+     String certificateId,
+   ) async {
+     final repo = context.read<CertificateRepository>();
+     final snackScaffold = ScaffoldMessenger.of(context);
+     snackScaffold.showSnackBar(
+       const SnackBar(
+         content: Text('جاري التحميل...'),
+         duration: Duration(seconds: 1),
+       ),
+     );
+     try {
+       final bytes = await repo.downloadCertificate(certificateId);
+       if (bytes.isEmpty) {
+         snackScaffold.showSnackBar(
+           const SnackBar(
+             content: Text('فشل التحميل'),
+             backgroundColor: AppColors.error,
+           ),
+         );
+         return;
+       }
+       final dir = await getApplicationDocumentsDirectory();
+       final file = File('${dir.path}/certificate_$certificateId.pdf');
+       await file.writeAsBytes(bytes);
+       await Share.shareXFiles(
+         [XFile(file.path)],
+         text: 'شهادة نواة',
+       );
+     } catch (_) {
+       snackScaffold.showSnackBar(
+         const SnackBar(
+           content: Text('حدث خطأ أثناء التحميل'),
+           backgroundColor: AppColors.error,
+         ),
+       );
+     }
+   }
+
+   IconData _iconForCertificate(String title, String? pathTitle) {
     final text = (title + (pathTitle ?? '')).toLowerCase();
     if (text.contains('هندسة') || text.contains('software')) {
       return Icons.military_tech;
@@ -155,6 +200,7 @@ class _CertificatesStoreScreenState extends State<CertificatesStoreScreen> {
                   context.go(cert.pdfUrl!);
                 }
               },
+              onDownload: () => _downloadCertificate(context, cert.id),
             ),
             const SizedBox(height: AppSpacing.gutter),
           ],
@@ -478,6 +524,7 @@ class _CertificateCard extends StatelessWidget {
   final String date;
   final Color glowColor;
   final VoidCallback? onShare;
+  final VoidCallback? onDownload;
 
   const _CertificateCard({
     required this.icon,
@@ -491,6 +538,7 @@ class _CertificateCard extends StatelessWidget {
     required this.date,
     required this.glowColor,
     this.onShare,
+    this.onDownload,
   });
 
   @override
@@ -568,35 +616,68 @@ class _CertificateCard extends StatelessWidget {
                   fontSize: 12,
                 ),
               ),
-              const SizedBox(height: AppSpacing.stackMD),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: onShare,
-                  style: OutlinedButton.styleFrom(
-                    backgroundColor: AppColors.surfaceVariant.withAlpha(128),
-                    foregroundColor: AppColors.onSurface,
-                    side: BorderSide(
-                        color: AppColors.onSurfaceVariant.withAlpha(51)),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.lg),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'مشاركة',
-                        style: AppTypography.labelMD
-                            .copyWith(color: AppColors.onSurface),
-                      ),
-                      const SizedBox(width: AppSpacing.stackSM),
-                      const Icon(Icons.share, size: 18),
-                    ],
-                  ),
-                ),
-              ),
+               const SizedBox(height: AppSpacing.stackMD),
+               Row(
+                 children: [
+                   Expanded(
+                     child: OutlinedButton(
+                       onPressed: onShare,
+                       style: OutlinedButton.styleFrom(
+                         backgroundColor: AppColors.surfaceVariant.withAlpha(128),
+                         foregroundColor: AppColors.onSurface,
+                         side: BorderSide(
+                             color: AppColors.onSurfaceVariant.withAlpha(51)),
+                         padding: const EdgeInsets.symmetric(vertical: 12),
+                         shape: RoundedRectangleBorder(
+                           borderRadius: BorderRadius.circular(AppRadius.lg),
+                         ),
+                       ),
+                       child: Row(
+                         mainAxisAlignment: MainAxisAlignment.center,
+                         children: [
+                           Text(
+                             'مشاركة',
+                             style: AppTypography.labelMD
+                                 .copyWith(color: AppColors.onSurface),
+                           ),
+                           const SizedBox(width: AppSpacing.stackSM),
+                           const Icon(Icons.share, size: 18),
+                         ],
+                       ),
+                     ),
+                   ),
+                   if (onDownload != null) ...[
+                     const SizedBox(width: AppSpacing.gutter),
+                     Expanded(
+                       child: OutlinedButton(
+                         onPressed: onDownload,
+                         style: OutlinedButton.styleFrom(
+                           backgroundColor: AppColors.surfaceVariant.withAlpha(128),
+                           foregroundColor: AppColors.onSurface,
+                           side: BorderSide(
+                               color: AppColors.onSurfaceVariant.withAlpha(51)),
+                           padding: const EdgeInsets.symmetric(vertical: 12),
+                           shape: RoundedRectangleBorder(
+                             borderRadius: BorderRadius.circular(AppRadius.lg),
+                           ),
+                         ),
+                         child: Row(
+                           mainAxisAlignment: MainAxisAlignment.center,
+                           children: [
+                             Text(
+                               'تحميل',
+                               style: AppTypography.labelMD
+                                   .copyWith(color: AppColors.onSurface),
+                             ),
+                             const SizedBox(width: AppSpacing.stackSM),
+                             const Icon(Icons.download_rounded, size: 18),
+                           ],
+                         ),
+                       ),
+                     ),
+                   ],
+                 ],
+               ),
             ],
           ),
         ],
@@ -716,7 +797,7 @@ class _PlanCard extends StatelessWidget {
             textBaseline: TextBaseline.alphabetic,
             children: [
               Text(
-                '${(plan.priceCents / 100).toStringAsFixed(0)}',
+                (plan.priceCents / 100).toStringAsFixed(0),
                 style: AppTypography.headlineXL,
               ),
               const SizedBox(width: 4),
