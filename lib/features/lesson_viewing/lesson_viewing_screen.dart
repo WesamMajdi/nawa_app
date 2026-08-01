@@ -1,54 +1,163 @@
 import 'package:flutter/material.dart';
-import 'package:nawa_flutter/core/helper/extension.dart';
-import 'package:nawa_flutter/features/home/dashboard_screen.dart';
-import '../../core/constants/constants.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:nawa_flutter/core/blocs/lesson/lesson_bloc.dart';
+import 'package:nawa_flutter/core/constants/constants.dart';
+import 'package:nawa_flutter/core/models/lesson_model.dart';
 
-class LessonViewingScreen extends StatelessWidget {
+class LessonViewingScreen extends StatefulWidget {
   final String lessonId;
   const LessonViewingScreen({super.key, required this.lessonId});
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Stack(
-        children: [
-          ListView(
-            padding: EdgeInsets.zero,
-            children: [
-              _TopBar(),
-              _VideoPlayer(),
-              _LessonHeader(),
-              _ContentTabs(),
-              _LessonList(),
-              const SizedBox(height: 100),
-            ],
+  State<LessonViewingScreen> createState() => _LessonViewingScreenState();
+}
+
+class _LessonViewingScreenState extends State<LessonViewingScreen> {
+  LessonDetailModel? _lesson;
+
+  @override
+  void initState() {
+    super.initState();
+    context.read<LessonBloc>().add(LessonLoadRequested(widget.lessonId));
+  }
+
+  void _handleComplete() {
+    final lesson = _lesson;
+    if (lesson == null) return;
+    switch (lesson.type) {
+      case 'video':
+        context.read<LessonBloc>().add(LessonCompleteRequested(lesson.id));
+      case 'code':
+        context.read<LessonBloc>().add(LessonSubmitCodeRequested(
+          id: lesson.id,
+          sourceCode: lesson.starterCode ?? '',
+          languageCode: lesson.languageCode ?? '',
+        ));
+      case 'quiz':
+        context.read<LessonBloc>().add(LessonSubmitQuizRequested(
+          id: lesson.id,
+          answers: [],
+        ));
+    }
+  }
+
+  void _showCompletionDialog(LessonCompletionResult result) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surfaceContainerHigh,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.xl)),
+        title: const Text('أحسنت!', style: AppTypography.headlineMD),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('+${result.xpAwarded} XP', style: AppTypography.headlineXL.copyWith(color: AppColors.primary)),
+            const SizedBox(height: 8),
+            Text('المجموع: ${result.newXpTotal} XP', style: AppTypography.bodyMD.copyWith(color: AppColors.onSurfaceVariant)),
+            Text('المستوى: ${result.level}', style: AppTypography.bodyMD.copyWith(color: AppColors.onSurfaceVariant)),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('متابعة'),
           ),
-          const _BottomBar(),
         ],
       ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocConsumer<LessonBloc, LessonState>(
+      listener: (context, state) {
+        if (state is LessonCompleted) {
+          _showCompletionDialog(state.result);
+        }
+      },
+      builder: (context, state) {
+        if (state is LessonLoaded) {
+          _lesson = state.lesson;
+        }
+        if (state is LessonLoading || state is LessonInitial) {
+          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        }
+        if (state is LessonError) {
+          return Scaffold(
+            body: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.containerMargin),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.error_outline, size: 48, color: AppColors.error),
+                    const SizedBox(height: 16),
+                    Text(state.message, textAlign: TextAlign.center, style: AppTypography.bodyMD),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: () => context.read<LessonBloc>().add(LessonLoadRequested(widget.lessonId)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: AppColors.onPrimary,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.xl)),
+                      ),
+                      child: const Text('إعادة المحاولة'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+        final lesson = _lesson;
+        if (lesson == null) return const SizedBox.shrink();
+        return Scaffold(
+          body: Stack(
+            children: [
+              ListView(
+                padding: EdgeInsets.zero,
+                children: [
+                  _TopBar(lesson: lesson),
+                  if (lesson.type == 'video') _VideoPlayerArea(lesson: lesson),
+                  if (lesson.type == 'code') _CodeContent(lesson: lesson),
+                  if (lesson.type == 'quiz') _QuizContent(lesson: lesson),
+                  _LessonHeader(lesson: lesson),
+                  _ContentTabs(),
+                  const SizedBox(height: 100),
+                ],
+              ),
+              _BottomBar(
+                lesson: lesson,
+                onComplete: _handleComplete,
+                showCompleted: state is LessonCompleted || lesson.isCompleted,
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
 
 class _TopBar extends StatelessWidget {
+  final LessonDetailModel lesson;
+  const _TopBar({required this.lesson});
+
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.containerMargin,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.containerMargin),
       height: 64,
       decoration: BoxDecoration(
         color: AppColors.background.withAlpha(204),
-        border: Border(
-          bottom: BorderSide(color: AppColors.outlineVariant.withAlpha(25)),
-        ),
+        border: Border(bottom: BorderSide(color: AppColors.outlineVariant.withAlpha(25))),
       ),
       child: Row(
         children: [
           IconButton(
             icon: const Icon(Icons.arrow_forward, color: AppColors.onSurface),
-            onPressed: () => context.push(DashboardScreen()),
+            onPressed: () => context.pop(),
           ),
           Expanded(
             child: Padding(
@@ -57,17 +166,13 @@ class _TopBar extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    'المسار: مطور الواجهات الأمامية',
-                    style: AppTypography.labelMD.copyWith(
-                      color: AppColors.onSurfaceVariant,
-                      fontSize: 12,
-                    ),
+                    'المسار: ${lesson.pathContext.pathTitle}',
+                    style: AppTypography.labelMD.copyWith(color: AppColors.onSurfaceVariant, fontSize: 12),
+                    overflow: TextOverflow.ellipsis,
                   ),
                   Text(
-                    'أساسيات جافاسكربت الحديثة',
-                    style: AppTypography.headlineMD.copyWith(
-                      color: AppColors.onSurface,
-                    ),
+                    lesson.pathContext.moduleTitle,
+                    style: AppTypography.headlineMD.copyWith(color: AppColors.onSurface),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
@@ -84,7 +189,10 @@ class _TopBar extends StatelessWidget {
   }
 }
 
-class _VideoPlayer extends StatelessWidget {
+class _VideoPlayerArea extends StatelessWidget {
+  final LessonDetailModel lesson;
+  const _VideoPlayerArea({required this.lesson});
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -94,13 +202,17 @@ class _VideoPlayer extends StatelessWidget {
         aspectRatio: 16 / 9,
         child: Stack(
           children: [
-            Image.network(
-              'https://lh3.googleusercontent.com/aida-public/AB6AXuC0kFrcLqQoE0r1hcfY29kVWRlDxNUq4BgI5XWAblqd52GIoZJC6mMU_iU5tCEEGeFebmsFHHZeT4FpwYXboommy_gmQfJxCR7L-S062JBI4pX3wEaQjkfkUIHLFphcraGpugWDRreSbfDX-YncRn-l0GrREGmbQVV5QUwiwFprLHyMHS8F0wVvj-aEBFG82ROJXhS8XHLhm0bWYYRNGQvoFoRxJvmEW-nzWFDMpOoU3U6KIS16k2hBbvrm0J_-OmNbGlahXwBFUw',
-              fit: BoxFit.cover,
-              width: double.infinity,
-              height: double.infinity,
-              opacity: const AlwaysStoppedAnimation(0.7),
-            ),
+            if (lesson.videoUrl != null)
+              Image.network(
+                lesson.videoUrl!,
+                fit: BoxFit.cover,
+                width: double.infinity,
+                height: double.infinity,
+                opacity: const AlwaysStoppedAnimation(0.7),
+                errorBuilder: (_, _, _) => Container(color: Colors.black),
+              )
+            else
+              Container(color: Colors.black),
             Center(
               child: Container(
                 width: 64,
@@ -109,11 +221,7 @@ class _VideoPlayer extends StatelessWidget {
                   borderRadius: BorderRadius.circular(AppRadius.full),
                   color: AppColors.surfaceVariant.withAlpha(102),
                 ),
-                child: const Icon(
-                  Icons.play_arrow,
-                  color: Colors.white,
-                  size: 36,
-                ),
+                child: const Icon(Icons.play_arrow, color: Colors.white, size: 36),
               ),
             ),
             _VideoControls(),
@@ -157,12 +265,7 @@ class _VideoControls extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: AppColors.primary,
                         borderRadius: BorderRadius.circular(AppRadius.full),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primary.withAlpha(128),
-                            blurRadius: 10,
-                          ),
-                        ],
+                        boxShadow: [BoxShadow(color: AppColors.primary.withAlpha(128), blurRadius: 10)],
                       ),
                     ),
                   ),
@@ -177,12 +280,8 @@ class _VideoControls extends StatelessWidget {
                 const SizedBox(width: 16),
                 const Icon(Icons.volume_up, color: Colors.white, size: 20),
                 const SizedBox(width: 16),
-                Text(
-                  '04:15 / 12:30',
-                  style: AppTypography.codeSM.copyWith(
-                    color: AppColors.onSurfaceVariant,
-                  ),
-                ),
+                Text('04:15 / 12:30',
+                    style: AppTypography.codeSM.copyWith(color: AppColors.onSurfaceVariant)),
                 const Spacer(),
                 const Icon(Icons.closed_caption, color: Colors.white, size: 20),
                 const SizedBox(width: 16),
@@ -198,15 +297,98 @@ class _VideoControls extends StatelessWidget {
   }
 }
 
+class _CodeContent extends StatelessWidget {
+  final LessonDetailModel lesson;
+  const _CodeContent({required this.lesson});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      color: const Color(0xFF1E1E1E),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (lesson.instructionsMd != null) ...[
+            Text(
+              lesson.instructionsMd!,
+              style: AppTypography.bodyMD.copyWith(color: Colors.white70),
+            ),
+            const SizedBox(height: 16),
+          ],
+          if (lesson.starterCode != null) ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.black.withAlpha(128),
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+              ),
+              child: SelectableText(
+                lesson.starterCode!,
+                style: AppTypography.codeSM.copyWith(color: Colors.greenAccent, fontSize: 13),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _QuizContent extends StatelessWidget {
+  final LessonDetailModel lesson;
+  const _QuizContent({required this.lesson});
+
+  @override
+  Widget build(BuildContext context) {
+    final questions = lesson.quiz ?? [];
+    if (questions.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return Container(
+      width: double.infinity,
+      color: const Color(0xFF1E1E1E),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: questions.map((q) => Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(q.question, style: AppTypography.bodyMD.copyWith(color: Colors.white)),
+              const SizedBox(height: 8),
+              ...q.options.map((o) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: [
+                    Icon(q.allowMultiple ? Icons.check_box_outline_blank : Icons.radio_button_unchecked,
+                        size: 20, color: Colors.white54),
+                    const SizedBox(width: 8),
+                    Text(o.text, style: AppTypography.bodyMD.copyWith(color: Colors.white70)),
+                  ],
+                ),
+              )),
+            ],
+          ),
+        )).toList(),
+      ),
+    );
+  }
+}
+
 class _LessonHeader extends StatelessWidget {
+  final LessonDetailModel lesson;
+  const _LessonHeader({required this.lesson});
+
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.containerMargin),
       decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: AppColors.outlineVariant.withAlpha(25)),
-        ),
+        border: Border(bottom: BorderSide(color: AppColors.outlineVariant.withAlpha(25))),
         color: AppColors.surface.withAlpha(77),
       ),
       child: Row(
@@ -217,37 +399,31 @@ class _LessonHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
                     color: AppColors.primaryContainer.withAlpha(51),
                     borderRadius: BorderRadius.circular(AppRadius.md),
                     border: Border.all(color: AppColors.primary.withAlpha(51)),
                   ),
                   child: Text(
-                    'الدرس الثالث',
-                    style: AppTypography.labelMD.copyWith(
-                      color: AppColors.primary,
-                      fontSize: 12,
-                    ),
+                    lesson.type == 'video' ? 'درس فيديو' : lesson.type == 'code' ? 'تحدي برمجي' : 'اختبار',
+                    style: AppTypography.labelMD.copyWith(color: AppColors.primary, fontSize: 12),
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'التعامل مع الوعود (Promises) في جافاسكربت',
-                  style: AppTypography.headlineLG.copyWith(
-                    color: AppColors.onSurface,
-                  ),
+                  lesson.title,
+                  style: AppTypography.headlineLG.copyWith(color: AppColors.onSurface),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'تعلم كيفية إدارة العمليات غير المتزامنة بشكل احترافي وتجنب "جحيم الاستدعاءات" (Callback Hell).',
-                  style: AppTypography.bodyMD.copyWith(
-                    color: AppColors.onSurfaceVariant,
+                if (lesson.instructionsMd != null && lesson.type == 'video') ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    lesson.instructionsMd!,
+                    style: AppTypography.bodyMD.copyWith(color: AppColors.onSurfaceVariant),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
+                ],
               ],
             ),
           ),
@@ -259,19 +435,21 @@ class _LessonHeader extends StatelessWidget {
                 height: 48,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.outlineVariant),
+                  border: Border.all(
+                    color: lesson.isCompleted ? AppColors.primary : AppColors.outlineVariant,
+                  ),
                 ),
-                child: const Icon(
-                  Icons.check,
-                  color: AppColors.outlineVariant,
+                child: Icon(
+                  lesson.isCompleted ? Icons.check : Icons.check,
+                  color: lesson.isCompleted ? AppColors.primary : AppColors.outlineVariant,
                   size: 28,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
-                'مكتمل',
+                lesson.isCompleted ? 'مكتمل' : 'لم يكتمل',
                 style: AppTypography.labelMD.copyWith(
-                  color: AppColors.onSurfaceVariant,
+                  color: lesson.isCompleted ? AppColors.primary : AppColors.onSurfaceVariant,
                   fontSize: 12,
                 ),
               ),
@@ -288,9 +466,7 @@ class _ContentTabs extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: AppColors.outlineVariant.withAlpha(25)),
-        ),
+        border: Border(bottom: BorderSide(color: AppColors.outlineVariant.withAlpha(25))),
         color: AppColors.background.withAlpha(242),
       ),
       child: Row(
@@ -299,26 +475,14 @@ class _ContentTabs extends StatelessWidget {
             child: Column(
               children: [
                 const SizedBox(height: 8),
-                Text(
-                  'محتوى الدورة',
-                  style: AppTypography.headlineMD.copyWith(
-                    color: AppColors.primary,
-                  ),
-                ),
+                Text('محتوى الدورة', style: AppTypography.headlineMD.copyWith(color: AppColors.primary)),
                 const SizedBox(height: 8),
                 Container(
                   height: 3,
                   decoration: BoxDecoration(
                     color: AppColors.primary,
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(AppRadius.full),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primary.withAlpha(128),
-                        blurRadius: 8,
-                      ),
-                    ],
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.full)),
+                    boxShadow: [BoxShadow(color: AppColors.primary.withAlpha(128), blurRadius: 8)],
                   ),
                 ),
               ],
@@ -328,12 +492,7 @@ class _ContentTabs extends StatelessWidget {
             child: Column(
               children: [
                 const SizedBox(height: 8),
-                Text(
-                  'الملاحظات',
-                  style: AppTypography.headlineMD.copyWith(
-                    color: AppColors.onSurfaceVariant,
-                  ),
-                ),
+                Text('الملاحظات', style: AppTypography.headlineMD.copyWith(color: AppColors.onSurfaceVariant)),
                 const SizedBox(height: 8),
                 Container(height: 3, color: Colors.transparent),
               ],
@@ -343,438 +502,47 @@ class _ContentTabs extends StatelessWidget {
             child: Column(
               children: [
                 const SizedBox(height: 8),
-                Text(
-                  'المرفقات',
-                  style: AppTypography.headlineMD.copyWith(
-                    color: AppColors.onSurfaceVariant,
-                  ),
-                ),
+                Text('المرفقات', style: AppTypography.headlineMD.copyWith(color: AppColors.onSurfaceVariant)),
                 const SizedBox(height: 8),
                 Container(height: 3, color: Colors.transparent),
               ],
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _LessonList extends StatelessWidget {
-  static void _navigateToLesson(BuildContext context, String title) {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => const LessonViewingScreen(lessonId: '1')),
-    );
-  }
-
-  static void _showLocked(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('هذا الدرس مقفل، يرجى إكمال الدروس السابقة'),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.md),
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(AppSpacing.containerMargin),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(
-                'الوحدة 1: الأساسيات المتقدمة',
-                style: AppTypography.headlineMD.copyWith(
-                  color: AppColors.onSurfaceVariant,
-                ),
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceVariant,
-                  borderRadius: BorderRadius.circular(AppRadius.full),
-                ),
-                child: Text(
-                  '3 / 5 مكتمل',
-                  style: AppTypography.labelMD.copyWith(
-                    color: AppColors.onSurfaceVariant,
-                    fontSize: 12,
-                    fontFamily: AppTypography.fontMono,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          _LessonCard(
-            icon: Icons.check,
-            iconColor: AppColors.primary,
-            iconBg: AppColors.primary.withAlpha(25),
-            iconBorder: AppColors.primary.withAlpha(51),
-            title: 'مراجعة سريعة للمتغيرات والنطاق (Scope)',
-            duration: '08:45',
-            onTap: () => _navigateToLesson(
-              context,
-              'مراجعة سريعة للمتغيرات والنطاق (Scope)',
-            ),
-          ),
-          const SizedBox(height: AppSpacing.gutter),
-          _LessonCard(
-            icon: Icons.check,
-            iconColor: AppColors.primary,
-            iconBg: AppColors.primary.withAlpha(25),
-            iconBorder: AppColors.primary.withAlpha(51),
-            title: 'مفهوم عدم التزامن (Asynchrony)',
-            duration: '15:20',
-            onTap: () =>
-                _navigateToLesson(context, 'مفهوم عدم التزامن (Asynchrony)'),
-          ),
-          const SizedBox(height: AppSpacing.gutter),
-          _ActiveLessonCard(
-            onTap: () => _navigateToLesson(
-              context,
-              'التعامل مع الوعود (Promises) في جافاسكربت',
-            ),
-          ),
-          const SizedBox(height: AppSpacing.gutter),
-          _LockedLessonCard(
-            icon: Icons.lock,
-            title: 'استخدام Async / Await',
-            duration: '20:15',
-            onTap: () => _showLocked(context),
-          ),
-          const SizedBox(height: AppSpacing.gutter),
-          _LockedLessonCard(
-            icon: Icons.code,
-            title: 'تحدي: جلب بيانات من API خارجي',
-            duration: 'مشروع عملي',
-            isSquare: true,
-            onTap: () => _showLocked(context),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _LessonCard extends StatelessWidget {
-  final IconData icon;
-  final Color iconColor;
-  final Color iconBg;
-  final Color iconBorder;
-  final String title;
-  final String duration;
-  final VoidCallback? onTap;
-
-  const _LessonCard({
-    required this.icon,
-    required this.iconColor,
-    required this.iconBg,
-    required this.iconBorder,
-    required this.title,
-    required this.duration,
-    this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(AppRadius.xl),
-          color: AppColors.surfaceVariant.withAlpha(102),
-          border: Border.all(color: AppColors.onSurfaceVariant.withAlpha(25)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: iconBg,
-                border: Border.all(color: iconBorder),
-              ),
-              child: Icon(icon, color: iconColor, size: 20),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: AppTypography.bodyMD.copyWith(
-                      color: AppColors.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.play_circle,
-                        size: 16,
-                        color: AppColors.onSurfaceVariant,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        duration,
-                        style: AppTypography.labelMD.copyWith(
-                          color: AppColors.onSurfaceVariant,
-                          fontSize: 12,
-                          fontFamily: AppTypography.fontMono,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ActiveLessonCard extends StatelessWidget {
-  final VoidCallback? onTap;
-
-  const _ActiveLessonCard({this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(AppRadius.xl),
-          color: AppColors.surfaceContainer,
-          border: Border.all(color: AppColors.primary.withAlpha(77)),
-          boxShadow: [
-            BoxShadow(color: AppColors.primary.withAlpha(20), blurRadius: 24),
-          ],
-        ),
-        child: Stack(
-          children: [
-            Positioned(
-              right: 0,
-              top: 0,
-              bottom: 0,
-              child: Container(
-                width: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primary.withAlpha(128),
-                      blurRadius: 12,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppColors.primary,
-                  ),
-                  child: const Icon(
-                    Icons.play_arrow,
-                    color: AppColors.onPrimary,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'التعامل مع الوعود (Promises) في جافاسكربت',
-                        style: AppTypography.headlineMD.copyWith(
-                          color: AppColors.primary,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withAlpha(25),
-                              borderRadius: BorderRadius.circular(AppRadius.sm),
-                              border: Border.all(
-                                color: AppColors.primary.withAlpha(51),
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(
-                                  Icons.graphic_eq,
-                                  size: 14,
-                                  color: AppColors.primary,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'يتم التشغيل الآن',
-                                  style: AppTypography.labelMD.copyWith(
-                                    color: AppColors.primary,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            '12:30',
-                            style: AppTypography.labelMD.copyWith(
-                              color: AppColors.primary.withAlpha(204),
-                              fontSize: 12,
-                              fontFamily: AppTypography.fontMono,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _LockedLessonCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String duration;
-  final bool isSquare;
-  final VoidCallback? onTap;
-
-  const _LockedLessonCard({
-    required this.icon,
-    required this.title,
-    required this.duration,
-    this.isSquare = false,
-    this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(AppRadius.xl),
-          border: Border.all(color: AppColors.outlineVariant.withAlpha(25)),
-          color: AppColors.surfaceContainerLowest,
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: isSquare
-                  ? BoxDecoration(
-                      borderRadius: BorderRadius.circular(AppRadius.lg),
-                      border: Border.all(color: AppColors.outlineVariant),
-                      color: AppColors.surfaceVariant.withAlpha(77),
-                    )
-                  : BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: AppColors.outlineVariant),
-                    ),
-              child: Icon(icon, color: AppColors.onSurfaceVariant, size: 20),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: AppTypography.bodyMD.copyWith(
-                      color: AppColors.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(
-                        isSquare ? Icons.task : Icons.schedule,
-                        size: 16,
-                        color: AppColors.outline,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        duration,
-                        style: AppTypography.labelMD.copyWith(
-                          color: AppColors.outline,
-                          fontSize: 12,
-                          fontFamily: !isSquare ? AppTypography.fontMono : null,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        // Override opacity via the Opacity wrapper
       ),
     );
   }
 }
 
 class _BottomBar extends StatelessWidget {
-  const _BottomBar();
+  final LessonDetailModel lesson;
+  final VoidCallback onComplete;
+  final bool showCompleted;
+
+  const _BottomBar({
+    required this.lesson,
+    required this.onComplete,
+    required this.showCompleted,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final String buttonText = switch (lesson.type) {
+      'video' => showCompleted ? 'تم الإكمال ✓' : 'إكمال الدرس',
+      'code' => showCompleted ? 'تم التقديم ✓' : 'تقديم الكود',
+      'quiz' => showCompleted ? 'تم التقديم ✓' : 'تقديم الإجابات',
+      _ => 'إكمال',
+    };
+
     return Align(
       alignment: Alignment.bottomCenter,
       child: Container(
         padding: const EdgeInsets.all(AppSpacing.containerMargin),
         decoration: BoxDecoration(
           color: AppColors.surfaceVariant.withAlpha(102),
-          borderRadius: const BorderRadius.vertical(
-            top: Radius.circular(AppRadius.xl),
-          ),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
           boxShadow: [
-            BoxShadow(
-              color: Colors.black.withAlpha(128),
-              blurRadius: 30,
-              offset: const Offset(0, -10),
-            ),
+            BoxShadow(color: Colors.black.withAlpha(128), blurRadius: 30, offset: const Offset(0, -10)),
           ],
         ),
         child: SafeArea(
@@ -788,43 +556,30 @@ class _BottomBar extends StatelessWidget {
                   borderRadius: BorderRadius.circular(AppRadius.xl),
                   border: Border.all(color: AppColors.outlineVariant),
                 ),
-                child: const Icon(
-                  Icons.edit_note,
-                  color: AppColors.onSurface,
-                  size: 24,
-                ),
+                child: const Icon(Icons.edit_note, color: AppColors.onSurface, size: 24),
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: SizedBox(
                   height: 56,
                   child: ElevatedButton(
-                    onPressed: () {
-                      _LessonList._navigateToLesson(context, 'الدرس التالي');
-                    },
-                    style:
-                        ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: AppColors.onPrimary,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppRadius.xl),
-                          ),
-                          elevation: 0,
-                          textStyle: AppTypography.headlineMD,
-                        ).copyWith(
-                          shadowColor: WidgetStateProperty.all(
-                            Colors.transparent,
-                          ),
-                          surfaceTintColor: WidgetStateProperty.all(
-                            Colors.transparent,
-                          ),
-                        ),
-                    child: const Row(
+                    onPressed: showCompleted ? null : onComplete,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: showCompleted ? AppColors.surfaceVariant : AppColors.primary,
+                      foregroundColor: showCompleted ? AppColors.onSurfaceVariant : AppColors.onPrimary,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.xl)),
+                      elevation: 0,
+                      textStyle: AppTypography.headlineMD,
+                    ).copyWith(
+                      shadowColor: WidgetStateProperty.all(Colors.transparent),
+                      surfaceTintColor: WidgetStateProperty.all(Colors.transparent),
+                    ),
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text('الدرس التالي'),
-                        SizedBox(width: 8),
-                        Icon(Icons.arrow_back, size: 20),
+                        Text(buttonText),
+                        const SizedBox(width: 8),
+                        Icon(showCompleted ? Icons.check : Icons.arrow_back, size: 20),
                       ],
                     ),
                   ),

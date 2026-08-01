@@ -10,10 +10,13 @@ import 'core/blocs/challenge/challenge_bloc.dart';
 import 'core/blocs/community/community_bloc.dart';
 import 'core/blocs/leaderboard/leaderboard_bloc.dart';
 import 'core/blocs/notification/notification_bloc.dart';
+import 'core/blocs/lesson/lesson_bloc.dart';
+import 'core/blocs/certificate/certificate_bloc.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   DependencyInjection.init();
+  Bloc.observer = const _AppBlocObserver();
   runApp(const NawahApp());
 }
 
@@ -43,6 +46,8 @@ class NawahApp extends StatelessWidget {
           BlocProvider(create: (_) => CommunityBloc(DependencyInjection.communityRepository)),
           BlocProvider(create: (_) => LeaderboardBloc(DependencyInjection.leaderboardRepository)),
           BlocProvider(create: (_) => NotificationBloc(DependencyInjection.notificationRepository)),
+          BlocProvider(create: (_) => LessonBloc(DependencyInjection.lessonRepository)),
+          BlocProvider(create: (_) => CertificateBloc(DependencyInjection.certificateRepository)),
         ],
         child: MaterialApp.router(
           title: 'نواة',
@@ -56,5 +61,15 @@ class NawahApp extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _AppBlocObserver extends BlocObserver {
+  const _AppBlocObserver();
+
+  @override
+  void onError(BlocBase bloc, Object error, StackTrace stackTrace) {
+    debugPrint('BlocError in ${bloc.runtimeType}: $error');
+    super.onError(bloc, error, stackTrace);
   }
 }

@@ -5,6 +5,8 @@ import 'api_endpoints.dart';
 class AuthInterceptor extends Interceptor {
   final FlutterSecureStorage _storage;
   final Dio _dio;
+  bool _isRefreshing = false;
+  static void Function()? onAuthFailure;
 
   AuthInterceptor(this._storage, this._dio);
 
@@ -22,6 +24,10 @@ class AuthInterceptor extends Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
     if (err.response?.statusCode == 401 && err.requestOptions.extra['retried'] != true) {
+      if (_isRefreshing) {
+        return handler.next(err);
+      }
+      _isRefreshing = true;
       try {
         final refreshToken = await _storage.read(key: 'refresh_token');
         if (refreshToken == null) {
@@ -50,10 +56,13 @@ class AuthInterceptor extends Interceptor {
         err.requestOptions.headers['Authorization'] = 'Bearer $newAccessToken';
         final retryResponse = await _dio.fetch(err.requestOptions);
         return handler.resolve(retryResponse);
-      } catch (_) {
+      } catch (e) {
         await _storage.delete(key: 'access_token');
         await _storage.delete(key: 'refresh_token');
+        onAuthFailure?.call();
         return handler.next(err);
+      } finally {
+        _isRefreshing = false;
       }
     }
     handler.next(err);
@@ -67,7 +76,8 @@ class AuthInterceptor extends Interceptor {
       ApiEndpoints.forgotPassword,
       ApiEndpoints.resetPassword,
       ApiEndpoints.plans,
+      ApiEndpoints.users,
     ];
-    return !noAuthPaths.any((p) => path.contains(p));
+    return !noAuthPaths.any((p) => path == p || path.startsWith('$p/'));
   }
 }

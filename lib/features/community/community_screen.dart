@@ -1,11 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:nawa_flutter/core/blocs/community/community_bloc.dart';
+import 'package:nawa_flutter/core/models/post_model.dart';
 import 'package:nawa_flutter/core/widgets/app_drawer.dart';
-import '../../core/constants/constants.dart';
-import '../../core/widgets/app_bottom_nav.dart';
-import '../notifications/notifications_screen.dart';
+import 'package:nawa_flutter/core/constants/constants.dart';
+import 'package:nawa_flutter/core/widgets/app_bottom_nav.dart';
+import 'package:go_router/go_router.dart';
 
-class CommunityScreen extends StatelessWidget {
+class CommunityScreen extends StatefulWidget {
   const CommunityScreen({super.key});
+
+  @override
+  State<CommunityScreen> createState() => _CommunityScreenState();
+}
+
+class _CommunityScreenState extends State<CommunityScreen> {
+  String? _selectedType;
+
+  @override
+  void initState() {
+    super.initState();
+    context.read<CommunityBloc>().add(CommunityLoadPosts());
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -13,37 +29,77 @@ class CommunityScreen extends StatelessWidget {
       drawer: const AppDrawer(),
       body: Stack(
         children: [
-          const _Body(),
+          BlocBuilder<CommunityBloc, CommunityState>(
+            builder: (context, state) {
+              if (state is CommunityLoading) {
+                return const SafeArea(
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
+              if (state is CommunityLoaded) {
+                return _buildBody(state);
+              }
+              if (state is CommunityError) {
+                return SafeArea(
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(state.message, style: AppTypography.bodyMD),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () =>
+                              context.read<CommunityBloc>().add(CommunityLoadPosts()),
+                          child: const Text('إعادة المحاولة'),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+              return const SizedBox.shrink();
+            },
+          ),
           const AppBottomNav(currentTab: NavTab.community),
           Positioned(
             bottom: 100,
             left: AppSpacing.containerMargin,
-            child: const _Fab(),
+            child: _Fab(),
           ),
         ],
       ),
     );
   }
-}
 
-class _Body extends StatelessWidget {
-  const _Body();
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildBody(CommunityLoaded state) {
     return SafeArea(
       child: ListView(
         padding: const EdgeInsets.only(bottom: 100),
-        children: const [
-          _TopBar(),
-          SizedBox(height: AppSpacing.stackLG),
-          _TrendingTopics(),
-          SizedBox(height: AppSpacing.gutter),
+        children: [
+          const _TopBar(),
+          const SizedBox(height: AppSpacing.stackLG),
+          if (state.trending.isNotEmpty) ...[
+            _TrendingTopics(topics: state.trending),
+            const SizedBox(height: AppSpacing.gutter),
+          ],
           Padding(
-            padding: EdgeInsets.symmetric(
+            padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.containerMargin,
             ),
-            child: _PostFeed(),
+            child: _TypeFilter(
+              selectedType: _selectedType,
+              onChanged: (type) {
+                setState(() => _selectedType = type);
+                context.read<CommunityBloc>().add(CommunityLoadPosts(type: type));
+              },
+            ),
+          ),
+          const SizedBox(height: AppSpacing.gutter),
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.containerMargin,
+            ),
+            child: _PostFeed(posts: state.posts),
           ),
         ],
       ),
@@ -91,10 +147,7 @@ class _TopBar extends StatelessWidget {
           ),
           const Spacer(),
           GestureDetector(
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const NotificationsScreen()),
-            ),
+            onTap: () => context.push('/notifications'),
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
@@ -113,8 +166,59 @@ class _TopBar extends StatelessWidget {
   }
 }
 
+class _TypeFilter extends StatelessWidget {
+  final String? selectedType;
+  final ValueChanged<String?> onChanged;
+
+  const _TypeFilter({required this.selectedType, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final types = <String?, String>{
+      null: 'الكل',
+      'question': 'أسئلة',
+      'discussion': 'نقاشات',
+      'achievement': 'إنجازات',
+    };
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: types.entries.map((e) {
+          final isSelected = selectedType == e.key;
+          return Padding(
+            padding: const EdgeInsets.only(left: 8),
+            child: GestureDetector(
+              onTap: () => onChanged(e.key),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(AppRadius.full),
+                  color: isSelected
+                      ? AppColors.primary
+                      : AppColors.surfaceVariant.withAlpha(77),
+                ),
+                child: Text(
+                  e.value,
+                  style: AppTypography.labelMD.copyWith(
+                    color: isSelected
+                        ? AppColors.onPrimary
+                        : AppColors.onSurfaceVariant,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  ),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
 class _TrendingTopics extends StatelessWidget {
-  const _TrendingTopics();
+  final List<TrendingTopicModel> topics;
+
+  const _TrendingTopics({required this.topics});
 
   @override
   Widget build(BuildContext context) {
@@ -132,15 +236,12 @@ class _TrendingTopics extends StatelessWidget {
             horizontal: AppSpacing.containerMargin,
           ),
           child: Row(
-            children: [
-              _TopicChip(label: '#React_Native'),
-              const SizedBox(width: AppSpacing.stackSM),
-              _TopicChip(label: '#Python_AI'),
-              const SizedBox(width: AppSpacing.stackSM),
-              _TopicChip(label: '#Vercel_Deploy'),
-              const SizedBox(width: AppSpacing.stackSM),
-              _TopicChip(label: '#Rust_WASM'),
-            ],
+            children: topics.map((t) {
+              return Padding(
+                padding: const EdgeInsets.only(left: AppSpacing.stackSM),
+                child: _TopicChip(label: '#${t.name}'),
+              );
+            }).toList(),
           ),
         ),
       ],
@@ -173,170 +274,191 @@ class _TopicChip extends StatelessWidget {
 }
 
 class _PostFeed extends StatelessWidget {
-  const _PostFeed();
+  final List<PostModel> posts;
+
+  const _PostFeed({required this.posts});
 
   @override
   Widget build(BuildContext context) {
+    if (posts.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32),
+          child: Text('لا توجد منشورات بعد', style: AppTypography.bodyMD),
+        ),
+      );
+    }
+    final bloc = context.read<CommunityBloc>();
     return Column(
       children: [
-        _PostCard(
-          name: 'أحمد عبد الله',
-          role: 'مطور واجهات أمامية',
-          time: 'منذ ساعتين',
-          avatarUrl:
-              'https://lh3.googleusercontent.com/aida-public/AB6AXuBF3Lj-E608JbgYnX4DQ6rA3gMGPDXFbnQaB-7yK-tL7iKSrFCwGhRI3lC5yA7TNzxpQCW99sgag9SiPdY2OLJOJ-DYTjUUwsUxl07lz9ZujmzZfUjdOkJdzxkhi3hetOZ5vVOoidVhWeP1swH4zBH0OKgk3dbZQN1zEzbJp8zVfWH6aIFVMVplAjpRp3uLoQ3-rDvuTOWOJP5ZLTW2HVlz7ZHVaIfu1mad4-JeJOjMNuFqIbpreeuv1e5FQ1iNUwPP1Cg0oMPBBg',
-          avatarBorder: AppColors.primaryContainer,
-          content:
-              'لقد كنت أجرب استخدام `Suspense` مع React 18 مؤخراً، النتائج مذهلة في تحسين تجربة المستخدم أثناء تحميل البيانات. هل لاحظ أحدكم أي مشاكل في الأداء عند استخدامه مع قوائم كبيرة؟',
-          codeSnippet:
-              '<Suspense fallback={<LoadingSpinner />}>\n  <HeavyDataList />\n</Suspense>',
-          likes: '24',
-          comments: '8',
-        ),
-        const SizedBox(height: AppSpacing.gutter),
-        _PostCard(
-          name: 'سارة محمد',
-          role: 'مهندسة نظم',
-          time: 'منذ 5 ساعات',
-          avatarUrl:
-              'https://lh3.googleusercontent.com/aida-public/AB6AXuCRwpt550h_IfP-yrEdqgSN9iao9Nt2LI_mEA_rcax2h1EnTCw4xXI6zFbLXf5Lz4GzSxRMItXiUxk6-MUEExu5Q23RbeK6W_VxSnfbbcv-82oapdxuCgIa20b6moQoI5DWFmq7PsQGDwAPz-Dy2dZo2RqXsY_XVD_v0aaIHDSTeqrEdKlTkRdh6mBBAsplV9MtNIfvvJ1kvjeCo2m3BZ4X9qpAobh_MEWVkBgkbil7zmyPwUYoKhpf7_QQnJCMsm_BhpW5XMbTXA',
-          avatarBorder: AppColors.surfaceVariant,
-          content:
-              'نبحث عن مطورين لمشروع مفتوح المصدر يهدف إلى توفير أدوات تحليل بيانات باللغة العربية. إذا كنت مهتماً بالمساهمة، تواصل معي. التقنيات: Python, Pandas, FastAPI.',
-          codeSnippet: null,
-          likes: '56',
-          comments: '12',
-        ),
+        for (int i = 0; i < posts.length; i++) ...[
+          _PostCard(
+            post: posts[i],
+            onLike: () => bloc.add(
+              CommunityToggleLike(
+                postId: posts[i].id,
+                isLiked: posts[i].isLikedByMe,
+              ),
+            ),
+          ),
+          if (i < posts.length - 1) const SizedBox(height: AppSpacing.gutter),
+        ],
       ],
     );
   }
 }
 
 class _PostCard extends StatelessWidget {
-  final String name;
-  final String role;
-  final String time;
-  final String? avatarUrl;
-  final Color avatarBorder;
-  final String content;
-  final String? codeSnippet;
-  final String likes;
-  final String comments;
+  final PostModel post;
+  final VoidCallback onLike;
 
-  const _PostCard({
-    required this.name,
-    required this.role,
-    required this.time,
-    this.avatarUrl,
-    required this.avatarBorder,
-    required this.content,
-    this.codeSnippet,
-    required this.likes,
-    required this.comments,
-  });
+  const _PostCard({required this.post, required this.onLike});
+
+  String _timeAgo(DateTime? date) {
+    if (date == null) return '';
+    final now = DateTime.now();
+    final diff = now.difference(date);
+    if (diff.inMinutes < 1) return 'الآن';
+    if (diff.inMinutes < 60) return 'منذ ${diff.inMinutes} د';
+    if (diff.inHours < 24) return 'منذ ${diff.inHours} س';
+    if (diff.inDays == 1) return 'الأمس';
+    if (diff.inDays < 7) return 'منذ ${diff.inDays} أيام';
+    return '${date.day}/${date.month}/${date.year}';
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        color: AppColors.surfaceContainerHigh.withAlpha(153),
-        border: Border.all(color: AppColors.onSurfaceVariant.withAlpha(25)),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.surfaceContainerHigh.withAlpha(204),
-            Colors.transparent,
-          ],
+    return GestureDetector(
+      onTap: () {},
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          color: AppColors.surfaceContainerHigh.withAlpha(153),
+          border: Border.all(color: AppColors.onSurfaceVariant.withAlpha(25)),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              AppColors.surfaceContainerHigh.withAlpha(204),
+              Colors.transparent,
+            ],
+          ),
         ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Stack(
-                children: [
-                  CircleAvatar(
-                    radius: 24,
-                    backgroundColor: AppColors.surfaceVariant,
-                    backgroundImage: avatarUrl != null
-                        ? NetworkImage(avatarUrl!)
-                        : null,
-                    child: avatarUrl == null
-                        ? const Icon(
-                            Icons.person,
-                            color: AppColors.onSurfaceVariant,
-                            size: 28,
-                          )
-                        : null,
-                  ),
-                  Positioned.fill(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: avatarBorder, width: 2),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Stack(
                   children: [
-                    Text(name, style: AppTypography.headlineMD),
-                    const SizedBox(height: 2),
-                    Text(
-                      '$role • $time',
-                      style: AppTypography.labelMD.copyWith(
-                        color: AppColors.onSurfaceVariant,
-                        fontSize: 12,
+                    CircleAvatar(
+                      radius: 24,
+                      backgroundColor: AppColors.surfaceVariant,
+                      backgroundImage: post.authorAvatarUrl != null
+                          ? NetworkImage(post.authorAvatarUrl!)
+                          : null,
+                      child: post.authorAvatarUrl == null
+                          ? const Icon(
+                              Icons.person,
+                              color: AppColors.onSurfaceVariant,
+                              size: 28,
+                            )
+                          : null,
+                    ),
+                    Positioned.fill(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: AppColors.primaryContainer,
+                            width: 2,
+                          ),
+                        ),
                       ),
                     ),
                   ],
                 ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(post.authorName, style: AppTypography.headlineMD),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${post.authorJobTitle ?? post.authorRole ?? ''} • ${_timeAgo(post.createdAt)}',
+                        style: AppTypography.labelMD.copyWith(
+                          color: AppColors.onSurfaceVariant,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (post.title != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                post.title!,
+                style:                 AppTypography.headlineMD.copyWith(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
               ),
             ],
-          ),
-          const SizedBox(height: 16),
-          Text(content, style: AppTypography.bodyMD),
-          if (codeSnippet != null) ...[
             const SizedBox(height: 12),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(AppRadius.lg),
-                color: AppColors.surfaceContainerHighest,
-              ),
-              child: Directionality(
-                textDirection: TextDirection.ltr,
-                child: Text(
-                  codeSnippet!,
-                  style: AppTypography.codeSM.copyWith(
-                    color: AppColors.primaryFixed,
+            Text(post.body, style: AppTypography.bodyMD),
+            if (post.imageUrls != null && post.imageUrls!.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 160,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: post.imageUrls!.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                  itemBuilder: (_, i) => ClipRRect(
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
+                    child: Image.network(
+                      post.imageUrls![i],
+                      width: 160,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                    ),
                   ),
                 ),
               ),
+            ],
+            const SizedBox(height: 12),
+            Divider(color: AppColors.onSurfaceVariant.withAlpha(25), height: 1),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                _ActionButton(
+                  icon: post.isLikedByMe
+                      ? Icons.thumb_up
+                      : Icons.thumb_up_outlined,
+                  label: '${post.likesCount}',
+                  isActive: post.isLikedByMe,
+                  onTap: onLike,
+                ),
+                const SizedBox(width: 24),
+                _ActionButton(
+                  icon: Icons.chat_bubble_outline,
+                  label: '${post.repliesCount}',
+                  onTap: () {},
+                ),
+                const Spacer(),
+                const _ActionButton(
+                  icon: Icons.share_outlined,
+                  label: 'مشاركة',
+                  onTap: null,
+                ),
+              ],
             ),
           ],
-          const SizedBox(height: 12),
-          Divider(color: AppColors.onSurfaceVariant.withAlpha(25), height: 1),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              _ActionButton(icon: Icons.thumb_up_outlined, label: likes),
-              const SizedBox(width: 24),
-              _ActionButton(icon: Icons.chat_bubble_outline, label: comments),
-              const Spacer(),
-              _ActionButton(icon: Icons.share_outlined, label: 'مشاركة'),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -345,22 +467,30 @@ class _PostCard extends StatelessWidget {
 class _ActionButton extends StatelessWidget {
   final IconData icon;
   final String label;
+  final bool isActive;
+  final VoidCallback? onTap;
 
-  const _ActionButton({required this.icon, required this.label});
+  const _ActionButton({
+    required this.icon,
+    required this.label,
+    this.isActive = false,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final color = isActive ? AppColors.primary : AppColors.onSurfaceVariant;
     return GestureDetector(
-      onTap: () {},
+      onTap: onTap,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 20, color: AppColors.onSurfaceVariant),
+          Icon(icon, size: 20, color: color),
           const SizedBox(width: 4),
           Text(
             label,
             style: AppTypography.labelMD.copyWith(
-              color: AppColors.onSurfaceVariant,
+              color: color,
               fontSize: 12,
             ),
           ),
@@ -394,7 +524,39 @@ class _Fab extends StatelessWidget {
           color: AppColors.surfaceContainerLowest,
           size: 32,
         ),
-        onPressed: () {},
+        onPressed: () => _showNewPostSheet(context),
+      ),
+    );
+  }
+
+  void _showNewPostSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'إنشاء منشور جديد',
+              style: AppTypography.headlineMD,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryContainer,
+                foregroundColor: AppColors.background,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                ),
+              ),
+              child: const Text('إلغاء'),
+            ),
+          ],
+        ),
       ),
     );
   }

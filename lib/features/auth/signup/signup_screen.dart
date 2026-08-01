@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/blocs/auth/auth_bloc.dart';
@@ -5,9 +6,7 @@ import '../../../core/constants/constants.dart';
 import '../../../core/helper/extension.dart';
 import '../../home/dashboard_screen.dart';
 import '../widgets/auth_button.dart';
-import '../widgets/auth_divider.dart';
 import '../widgets/auth_field.dart';
-import '../widgets/social_button.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -25,6 +24,7 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
   bool _isLoading = false;
+  StreamSubscription? _authSubscription;
 
   @override
   void initState() {
@@ -34,7 +34,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
   void _listenToAuthState() {
     final authBloc = context.read<AuthBloc>();
-    authBloc.stream.listen((state) {
+    _authSubscription = authBloc.stream.listen((state) {
       if (!mounted) return;
       if (state is AuthAuthenticated) {
         setState(() => _isLoading = false);
@@ -52,6 +52,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   void dispose() {
+    _authSubscription?.cancel();
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
@@ -148,17 +149,6 @@ class _SignupScreenState extends State<SignupScreen> {
                   color: AppColors.onSurfaceVariant,
                 ),
               ),
-              const SizedBox(height: AppSpacing.stackMD),
-              SocialButton(
-                label: 'التسجيل بواسطة جوجل',
-                icon: Image.network(
-                  'https://lh3.googleusercontent.com/aida-public/AB6AXuCEAZ3-yc3m9ZGS11xU-OFZjnJtHt-NvIaA4dRpf4DAxyNZlrzI_eqjLOmaEkuDMaQtWke0RBHFNnKy4hmuyAlszqF68Ifv0dvr_uV8Nnsi62dEpJwjoSqYQokA1rtZ2SO-f8nwEZYb4eShyUt6yek_yTwnQhbXW5CC0MaoMx58ApbsRbvZ57ouw5dh0jt-lTmIrxKz-ZHkQFSp76FQCBmtmeXunQVz4_PjTzOmE4JzRkADyGAV1nf73iG5wlW31sGSklnJVKcDMA',
-                  width: 20,
-                  height: 20,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.stackMD),
-              const AuthDivider(),
               const SizedBox(height: AppSpacing.stackMD),
               AuthField(
                 label: 'الاسم الكامل',

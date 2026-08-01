@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:nawa_flutter/features/home/dashboard_screen.dart';
-import 'package:nawa_flutter/features/profile/profile_screen.dart';
+import 'package:go_router/go_router.dart';
 import '../constants/constants.dart';
-import '../../features/explore/explore_screen.dart';
-import '../../features/community/community_screen.dart';
-import '../../features/challenges/challenges_screen.dart';
 
 enum NavTab { profile, challenges, community, explore, home }
 
@@ -43,79 +39,52 @@ class AppBottomNav extends StatelessWidget {
               padding: EdgeInsets.zero,
               child: Row(
                 children: [
-                  _NavItem(
-                    icon: Icons.person_outline,
-                    label: 'الملف الشخصي',
-                    isActive: currentTab == NavTab.profile,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const ProfileScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _NavItem(
-                    icon: Icons.emoji_events_outlined,
-                    label: 'التحديات',
-                    isActive: currentTab == NavTab.challenges,
-                    onTap: () {
-                      if (currentTab != NavTab.challenges) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const ChallengesScreen(),
-                          ),
-                        );
-                      }
-                    },
-                  ),
-                  _NavItem(
-                    icon: Icons.groups_outlined,
-                    label: 'المجتمع',
-                    isActive: currentTab == NavTab.community,
-                    onTap: () {
-                      if (currentTab != NavTab.community) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const CommunityScreen(),
-                          ),
-                        );
-                      }
-                    },
-                  ),
-                  _NavItem(
-                    icon: Icons.search,
-                    label: 'الاستكشاف',
-                    isActive: currentTab == NavTab.explore,
-                    onTap: () {
-                      if (currentTab != NavTab.explore) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const ExploreScreen(),
-                          ),
-                        );
-                      }
-                    },
-                  ),
-                  _NavItem(
-                    icon: Icons.home_rounded,
-                    label: 'الرئيسية',
-                    isActive: currentTab == NavTab.home,
-                    onTap: () {
-                      if (currentTab != NavTab.explore) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const DashboardScreen(),
-                          ),
-                        );
-                      }
-                    },
-                  ),
+                    _NavItem(
+                      icon: Icons.person_outline,
+                      label: 'الملف الشخصي',
+                      isActive: currentTab == NavTab.profile,
+                      onTap: () => context.go('/profile'),
+                    ),
+                    _NavItem(
+                      icon: Icons.emoji_events_outlined,
+                      label: 'التحديات',
+                      isActive: currentTab == NavTab.challenges,
+                      onTap: () {
+                        if (currentTab != NavTab.challenges) {
+                          context.go('/challenges');
+                        }
+                      },
+                    ),
+                    _NavItem(
+                      icon: Icons.groups_outlined,
+                      label: 'المجتمع',
+                      isActive: currentTab == NavTab.community,
+                      onTap: () {
+                        if (currentTab != NavTab.community) {
+                          context.go('/community');
+                        }
+                      },
+                    ),
+                    _NavItem(
+                      icon: Icons.search,
+                      label: 'الاستكشاف',
+                      isActive: currentTab == NavTab.explore,
+                      onTap: () {
+                        if (currentTab != NavTab.explore) {
+                          context.go('/explore');
+                        }
+                      },
+                    ),
+                    _NavItem(
+                      icon: Icons.home_rounded,
+                      label: 'الرئيسية',
+                      isActive: currentTab == NavTab.home,
+                      onTap: () {
+                        if (currentTab != NavTab.home) {
+                          context.go('/dashboard');
+                        }
+                      },
+                    ),
                 ],
               ),
             ),

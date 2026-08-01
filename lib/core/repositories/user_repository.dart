@@ -1,4 +1,5 @@
 import '../models/dashboard_model.dart';
+import '../models/user_model.dart';
 import '../models/user_models.dart';
 import '../network/api_client.dart';
 import '../network/api_endpoints.dart';
@@ -8,9 +9,9 @@ class UserRepository {
 
   UserRepository(this._api);
 
-  Future<Map<String, dynamic>> getMe() async {
+  Future<UserModel> getMe() async {
     final response = await _api.get(ApiEndpoints.me);
-    return response.data;
+    return UserModel.fromJson(response.data['user'] as Map<String, dynamic>);
   }
 
   Future<DashboardModel> getDashboard() async {
@@ -18,7 +19,7 @@ class UserRepository {
     return DashboardModel.fromJson(response.data);
   }
 
-  Future<Map<String, dynamic>> updateProfile({
+  Future<UserModel> updateProfile({
     String? name,
     String? handle,
     String? avatarUrl,
@@ -37,7 +38,7 @@ class UserRepository {
     if (isAvailableForHire != null) data['isAvailableForHire'] = isAvailableForHire;
 
     final response = await _api.patch(ApiEndpoints.meProfile, data: data);
-    return response.data;
+    return UserModel.fromJson(response.data);
   }
 
   Future<void> changeEmail({

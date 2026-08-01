@@ -124,29 +124,71 @@ class ContinueData {
 
 class DailyChallengeModel {
   final String id;
+  final String kind;
+  final String category;
   final String title;
   final String? description;
-  final String? difficulty;
-  final String? category;
+  final int? participantsCount;
+  final String? endsAt;
   final int? xpReward;
+  final String? prize;
+  final String? badgeReward;
+  final String? difficulty;
+  final String? languageCode;
+  final String? imageUrl;
+  final String? color;
+  final bool joinedOrSolved;
+  final int? solvedCount;
+  final double? successRatePct;
+  final String? tag;
+  final bool isDaily;
+  final bool solved;
 
   DailyChallengeModel({
     required this.id,
+    required this.kind,
+    required this.category,
     required this.title,
     this.description,
-    this.difficulty,
-    this.category,
+    this.participantsCount,
+    this.endsAt,
     this.xpReward,
+    this.prize,
+    this.badgeReward,
+    this.difficulty,
+    this.languageCode,
+    this.imageUrl,
+    this.color,
+    this.joinedOrSolved = false,
+    this.solvedCount,
+    this.successRatePct,
+    this.tag,
+    this.isDaily = false,
+    this.solved = false,
   });
 
   factory DailyChallengeModel.fromJson(Map<String, dynamic> json) {
     return DailyChallengeModel(
       id: json['id'] as String,
+      kind: json['kind'] as String,
+      category: json['category'] as String,
       title: json['title'] as String,
       description: json['description'] as String?,
-      difficulty: json['difficulty'] as String?,
-      category: json['category'] as String?,
+      participantsCount: json['participantsCount'] as int?,
+      endsAt: json['endsAt'] as String?,
       xpReward: json['xpReward'] as int?,
+      prize: json['prize'] as String?,
+      badgeReward: json['badgeReward'] as String?,
+      difficulty: json['difficulty'] as String?,
+      languageCode: json['languageCode'] as String?,
+      imageUrl: json['imageUrl'] as String?,
+      color: json['color'] as String?,
+      joinedOrSolved: json['joinedOrSolved'] as bool? ?? false,
+      solvedCount: json['solvedCount'] as int?,
+      successRatePct: (json['successRatePct'] as num?)?.toDouble(),
+      tag: json['tag'] as String?,
+      isDaily: json['isDaily'] as bool? ?? false,
+      solved: json['solved'] as bool? ?? false,
     );
   }
 }
@@ -174,6 +216,7 @@ class LeaderboardPreviewItem {
   final String? initials;
   final String? avatarUrl;
   final int xp;
+  final String? trend;
   final bool isCurrentUser;
 
   LeaderboardPreviewItem({
@@ -183,6 +226,7 @@ class LeaderboardPreviewItem {
     this.initials,
     this.avatarUrl,
     required this.xp,
+    this.trend,
     required this.isCurrentUser,
   });
 
@@ -194,6 +238,7 @@ class LeaderboardPreviewItem {
       initials: json['initials'] as String?,
       avatarUrl: json['avatarUrl'] as String?,
       xp: json['xp'] as int? ?? 0,
+      trend: json['trend'] as String?,
       isCurrentUser: json['isCurrentUser'] as bool? ?? false,
     );
   }

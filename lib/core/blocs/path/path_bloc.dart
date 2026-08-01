@@ -3,6 +3,7 @@ import 'package:equatable/equatable.dart';
 import '../../models/path_model.dart';
 import '../../models/dashboard_model.dart';
 import '../../repositories/path_repository.dart';
+import '../../network/api_exceptions.dart';
 
 // Events
 sealed class PathEvent extends Equatable {
@@ -90,7 +91,13 @@ class PathBloc extends Bloc<PathEvent, PathState> {
       );
       emit(PathListLoaded(paths));
     } catch (e) {
-      emit(PathError(e.toString()));
+      String message;
+      if (e is ApiException) {
+        message = e.toUserMessage();
+      } else {
+        message = 'حدث خطأ غير متوقع';
+      }
+      emit(PathError(message));
     }
   }
 
@@ -100,17 +107,30 @@ class PathBloc extends Bloc<PathEvent, PathState> {
       final path = await _repository.getPathDetail(event.slug);
       emit(PathDetailLoaded(path));
     } catch (e) {
-      emit(PathError(e.toString()));
+      String message;
+      if (e is ApiException) {
+        message = e.toUserMessage();
+      } else {
+        message = 'حدث خطأ غير متوقع';
+      }
+      emit(PathError(message));
     }
   }
 
   Future<void> _onEnroll(PathEnrollRequested event, Emitter<PathState> emit) async {
+    emit(PathLoading());
     try {
       await _repository.enrollPath(event.slug);
       final path = await _repository.getPathDetail(event.slug);
       emit(PathEnrolled(path));
     } catch (e) {
-      emit(PathError(e.toString()));
+      String message;
+      if (e is ApiException) {
+        message = e.toUserMessage();
+      } else {
+        message = 'حدث خطأ غير متوقع';
+      }
+      emit(PathError(message));
     }
   }
 }

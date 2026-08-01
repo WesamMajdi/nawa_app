@@ -29,8 +29,8 @@ class PathRepository {
     return PathDetailModel.fromJson(response.data);
   }
 
-  Future<Map<String, dynamic>> enrollPath(String slug) async {
+  Future<PathDetailModel> enrollPath(String slug) async {
     final response = await _api.post('${ApiEndpoints.paths}/$slug/enroll');
-    return response.data;
+    return PathDetailModel.fromJson(response.data);
   }
 }

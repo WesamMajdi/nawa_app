@@ -1,76 +1,315 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import '../../core/blocs/notification/notification_bloc.dart';
 import '../../core/constants/constants.dart';
+import '../../core/models/notification_model.dart';
 
-class NotificationsScreen extends StatelessWidget {
+class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
+
+  @override
+  State<NotificationsScreen> createState() => _NotificationsScreenState();
+}
+
+class _NotificationsScreenState extends State<NotificationsScreen> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    context.read<NotificationBloc>().add(const NotificationLoadRequested());
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 300) {
+      final state = context.read<NotificationBloc>().state;
+      if (state is NotificationLoaded && state.hasMore) {
+        context.read<NotificationBloc>().add(NotificationLoadMore());
+      }
+    }
+  }
+
+  String _emojiForType(String type) {
+    switch (type) {
+      case 'streak':
+        return '\u{1F525}';
+      case 'badge':
+        return '\u{1F3C5}';
+      case 'reply':
+        return '\u{1F4AC}';
+      case 'review':
+        return '\u{2B50}';
+      case 'system':
+        return '\u{2699}\u{FE0F}';
+      case 'hackathon':
+        return '\u{1F4BB}';
+      case 'billing':
+        return '\u{1F4B3}';
+      case 'match':
+        return '\u{1F91D}';
+      case 'mention':
+        return '@';
+      default:
+        return '\u{1F514}';
+    }
+  }
+
+  Color _iconBgForType(String type) {
+    switch (type) {
+      case 'streak':
+        return AppColors.primaryContainer;
+      case 'badge':
+        return AppColors.tertiaryContainer;
+      case 'reply':
+        return AppColors.secondaryContainer;
+      case 'review':
+        return const Color(0x1AFFD700);
+      case 'system':
+        return AppColors.surfaceVariant;
+      case 'hackathon':
+        return AppColors.primaryContainer;
+      case 'billing':
+        return AppColors.secondaryContainer;
+      case 'match':
+        return AppColors.tertiaryContainer;
+      case 'mention':
+        return AppColors.primaryContainer;
+      default:
+        return AppColors.surfaceVariant;
+    }
+  }
+
+  String _timeAgo(DateTime? date) {
+    if (date == null) return '';
+    final now = DateTime.now();
+    final diff = now.difference(date);
+    if (diff.inMinutes < 1) return 'الآن';
+    if (diff.inMinutes < 60) return 'منذ ${diff.inMinutes} د';
+    if (diff.inHours < 24) return 'منذ ${diff.inHours} س';
+    if (diff.inDays == 1) return 'الأمس';
+    if (diff.inDays < 7) return 'منذ ${diff.inDays} أيام';
+    return '${date.day}/${date.month}/${date.year}';
+  }
+
+  Map<String, List<NotificationModel>> _groupByDate(
+      List<NotificationModel> notifications) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final Map<String, List<NotificationModel>> groups = {};
+    for (final n in notifications) {
+      String key;
+      if (n.createdAt == null) {
+        key = 'سابقاً';
+      } else {
+        final d = DateTime(n.createdAt!.year, n.createdAt!.month, n.createdAt!.day);
+        if (d == today) {
+          key = 'اليوم';
+        } else if (d == yesterday) {
+          key = 'الأمس';
+        } else {
+          key = 'سابقاً';
+        }
+      }
+      groups.putIfAbsent(key, () => []);
+      groups[key]!.add(n);
+    }
+    return groups;
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.only(bottom: 24),
+        child: BlocBuilder<NotificationBloc, NotificationState>(
+          builder: (context, state) {
+            if (state is NotificationLoading) {
+              return _buildLoading();
+            }
+            if (state is NotificationError) {
+              return _buildError(state.message);
+            }
+            if (state is NotificationLoaded) {
+              final grouped = _groupByDate(state.notifications);
+              final sectionKeys = ['اليوم', 'الأمس', 'سابقاً'];
+              return RefreshIndicator(
+                onRefresh: () async {
+                  context
+                      .read<NotificationBloc>()
+                      .add(const NotificationLoadRequested());
+                },
+                child: ListView(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.only(bottom: 24),
+                  children: [
+                    _TopBar(
+                      onMarkAllRead: () {
+                        context
+                            .read<NotificationBloc>()
+                            .add(NotificationMarkAllAsRead());
+                      },
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(
+                          horizontal: AppSpacing.containerMargin),
+                      child: _ClearAllRow(),
+                    ),
+                    const SizedBox(height: AppSpacing.stackLG),
+                    for (final key in sectionKeys)
+                      if (grouped.containsKey(key)) ...[
+                        if (key != sectionKeys.first)
+                          const SizedBox(height: AppSpacing.stackMD),
+                        _SectionHeader(title: key),
+                        for (final notification in grouped[key]!)
+                          _NotificationCard(
+                            emoji: _emojiForType(notification.type),
+                            iconBg: _iconBgForType(notification.type),
+                            title: notification.title,
+                            time: _timeAgo(notification.createdAt),
+                            body: notification.text,
+                            unread: !notification.isRead,
+                            onTap: () {
+                              if (!notification.isRead) {
+                                context
+                                    .read<NotificationBloc>()
+                                    .add(NotificationMarkAsRead(notification.id));
+                              }
+                              if (notification.linkUrl != null) {
+                                context.go(notification.linkUrl!);
+                              }
+                            },
+                          ),
+                      ],
+                    if (state.hasMore)
+                      const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Center(child: CircularProgressIndicator()),
+                      ),
+                  ],
+                ),
+              );
+            }
+            return const SizedBox.shrink();
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoading() {
+    return ListView(
+      padding: const EdgeInsets.only(bottom: 24),
+      children: [
+        _TopBar(),
+        const Padding(
+          padding:
+              EdgeInsets.symmetric(horizontal: AppSpacing.containerMargin),
+          child: _ClearAllRow(),
+        ),
+        const SizedBox(height: AppSpacing.stackLG),
+        for (int i = 0; i < 5; i++) _ShimmerCard(),
+      ],
+    );
+  }
+
+  Widget _buildError(String message) {
+    return ListView(
+      children: [
+        _TopBar(),
+        const SizedBox(height: 48),
+        Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              children: [
+                const Icon(Icons.error_outline,
+                    size: 48, color: AppColors.error),
+                const SizedBox(height: 16),
+                Text(
+                  message,
+                  style: AppTypography.bodyMD.copyWith(
+                    color: AppColors.onSurfaceVariant,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () {
+                    context
+                        .read<NotificationBloc>()
+                        .add(const NotificationLoadRequested());
+                  },
+                  child: const Text('إعادة المحاولة'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ShimmerCard extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.containerMargin,
+        vertical: AppSpacing.stackSM / 2,
+      ),
+      child: Container(
+        height: 88,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          color: AppColors.surfaceContainerHigh.withAlpha(76),
+        ),
+        child: Row(
           children: [
-            _TopBar(),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: AppSpacing.containerMargin),
-              child: _ClearAllRow(),
+            const SizedBox(width: 16),
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.surfaceVariant.withAlpha(76),
+              ),
             ),
-            const SizedBox(height: AppSpacing.stackLG),
-            const _SectionHeader(title: 'اليوم'),
-            const _NotificationCard(
-              icon: Icons.emoji_events,
-              iconBg: AppColors.primaryContainer,
-              iconColor: AppColors.primary,
-              iconFill: true,
-              title: 'تحدي الخوارزميات الجديد متاح',
-              time: 'منذ ساعتين',
-              body: 'انضم الآن لتحدي "البحث الثنائي المتقدم" واكسب 50 نقطة خبرة.',
-              unread: true,
-            ),
-            const _NotificationCard(
-              icon: Icons.forum,
-              iconBg: AppColors.secondaryContainer,
-              iconColor: AppColors.secondary,
-              iconFill: true,
-              title: 'رد جديد من AhmedDev',
-              time: 'منذ 4 ساعات',
-              body: 'قام بالرد على سؤالك في قسم "React Hooks".',
-              unread: true,
-            ),
-            const SizedBox(height: AppSpacing.stackMD),
-            const _SectionHeader(title: 'الأمس'),
-            const _NotificationCard(
-              icon: Icons.military_tech,
-              iconBg: AppColors.tertiaryContainer,
-              iconColor: AppColors.tertiaryContainer,
-              iconFill: true,
-              title: 'حصلت على شارة "مصلح الأخطاء"',
-              time: 'الأمس، 14:30',
-              body: 'لقد قمت بحل 10 أخطاء برمجية بنجاح هذا الأسبوع. واصل التألق!',
-              unread: false,
-            ),
-            const _NotificationCard(
-              icon: Icons.groups,
-              iconBg: AppColors.primaryContainer,
-              iconColor: AppColors.primary,
-              iconFill: false,
-              title: 'لقاء مجتمع بايثون',
-              time: 'الأمس، 09:15',
-              body: 'تذكير: اللقاء الأسبوعي يبدأ بعد 15 دقيقة في الغرفة الصوتية.',
-              unread: false,
-            ),
-            const SizedBox(height: AppSpacing.stackMD),
-            const _SectionHeader(title: 'سابقاً'),
-            const _NotificationCard(
-              icon: Icons.update,
-              iconBg: AppColors.surfaceVariant,
-              iconColor: AppColors.onSurfaceVariant,
-              iconFill: false,
-              title: 'تحديث النظام v2.4',
-              time: '12 مايو',
-              body: 'تم إضافة ميزات جديدة لبيئة التطوير المدمجة. اقرأ سجل التغييرات.',
-              unread: false,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 160,
+                    height: 14,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(4),
+                      color: AppColors.surfaceVariant.withAlpha(76),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    width: 100,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(4),
+                      color: AppColors.surfaceVariant.withAlpha(51),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -80,7 +319,9 @@ class NotificationsScreen extends StatelessWidget {
 }
 
 class _TopBar extends StatelessWidget {
-  const _TopBar();
+  final VoidCallback? onMarkAllRead;
+
+  const _TopBar({this.onMarkAllRead});
 
   @override
   Widget build(BuildContext context) {
@@ -116,7 +357,7 @@ class _TopBar extends StatelessWidget {
           ),
           const Spacer(),
           GestureDetector(
-            onTap: () {},
+            onTap: onMarkAllRead,
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
@@ -140,7 +381,9 @@ class _ClearAllRow extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
         GestureDetector(
-          onTap: () {},
+          onTap: () {
+            context.read<NotificationBloc>().add(NotificationMarkAllAsRead());
+          },
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -172,31 +415,30 @@ class _SectionHeader extends StatelessWidget {
       ),
       child: Text(
         title,
-        style: AppTypography.headlineMD.copyWith(color: AppColors.onSurfaceVariant),
+        style: AppTypography.headlineMD.copyWith(
+            color: AppColors.onSurfaceVariant),
       ),
     );
   }
 }
 
 class _NotificationCard extends StatelessWidget {
-  final IconData icon;
+  final String emoji;
   final Color iconBg;
-  final Color iconColor;
-  final bool iconFill;
   final String title;
   final String time;
   final String body;
   final bool unread;
+  final VoidCallback? onTap;
 
   const _NotificationCard({
-    required this.icon,
+    required this.emoji,
     required this.iconBg,
-    required this.iconColor,
-    required this.iconFill,
     required this.title,
     required this.time,
     required this.body,
     required this.unread,
+    this.onTap,
   });
 
   @override
@@ -207,7 +449,7 @@ class _NotificationCard extends StatelessWidget {
         vertical: AppSpacing.stackSM / 2,
       ),
       child: GestureDetector(
-        onTap: () {},
+        onTap: onTap,
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -245,12 +487,13 @@ class _NotificationCard extends StatelessWidget {
                   height: 40,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(AppRadius.full),
-                    color: iconBg.withAlpha(25),
+                    color: iconBg,
                   ),
-                  child: Icon(
-                    icon,
-                    color: iconColor,
-                    size: 20,
+                  child: Center(
+                    child: Text(
+                      emoji,
+                      style: const TextStyle(fontSize: 20),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -265,9 +508,12 @@ class _NotificationCard extends StatelessWidget {
                           Expanded(
                             child: Text(
                               title,
-                              style: AppTypography.headlineMD.copyWith(
+                              style:
+                                  AppTypography.headlineMD.copyWith(
                                 color: AppColors.onSurface,
                                 fontSize: 16,
+                                fontWeight:
+                                    unread ? FontWeight.bold : FontWeight.normal,
                               ),
                             ),
                           ),
@@ -275,7 +521,8 @@ class _NotificationCard extends StatelessWidget {
                           Text(
                             time,
                             style: AppTypography.codeSM.copyWith(
-                              color: AppColors.onSurfaceVariant.withAlpha(153),
+                              color:
+                                  AppColors.onSurfaceVariant.withAlpha(153),
                             ),
                           ),
                         ],

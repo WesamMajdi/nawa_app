@@ -15,6 +15,7 @@ import '../../features/notifications/notifications_screen.dart';
 import '../../features/profile/profile_screen.dart';
 import '../../features/account_settings/account_settings_screen.dart';
 import '../../features/certificates_store/certificates_store_screen.dart';
+import '../../features/registration_confirmation/registration_confirmation_screen.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -87,6 +88,10 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/certificates-store',
       builder: (context, state) => const CertificatesStoreScreen(),
+    ),
+    GoRoute(
+      path: '/registration-confirmation',
+      builder: (context, state) => const RegistrationConfirmationScreen(),
     ),
   ],
 );

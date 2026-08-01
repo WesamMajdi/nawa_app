@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../../models/auth_result.dart';
 import '../../repositories/auth_repository.dart';
+import '../../network/api_exceptions.dart';
 
 // Events
 sealed class AuthEvent extends Equatable {
@@ -81,8 +82,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   Future<void> _onCheckStatus(AuthCheckStatus event, Emitter<AuthState> emit) async {
-    final isLoggedIn = await _repository.isLoggedIn();
-    emit(isLoggedIn ? const AuthAuthenticated() : AuthUnauthenticated());
+    emit(AuthLoading());
+    try {
+      final isLoggedIn = await _repository.isLoggedIn();
+      emit(isLoggedIn ? const AuthAuthenticated() : AuthUnauthenticated());
+    } catch (_) {
+      emit(AuthUnauthenticated());
+    }
   }
 
   Future<void> _onLogin(AuthLoginRequested event, Emitter<AuthState> emit) async {
@@ -94,7 +100,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       );
       emit(AuthAuthenticated(result));
     } catch (e) {
-      emit(AuthError(e.toString()));
+      String message;
+      if (e is ApiException) {
+        message = e.toUserMessage();
+      } else {
+        message = 'حدث خطأ غير متوقع';
+      }
+      emit(AuthError(message));
     }
   }
 
@@ -109,12 +121,21 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       );
       emit(AuthAuthenticated(result));
     } catch (e) {
-      emit(AuthError(e.toString()));
+      String message;
+      if (e is ApiException) {
+        message = e.toUserMessage();
+      } else {
+        message = 'حدث خطأ غير متوقع';
+      }
+      emit(AuthError(message));
     }
   }
 
   Future<void> _onLogout(AuthLogoutRequested event, Emitter<AuthState> emit) async {
-    await _repository.logout();
+    try {
+      await _repository.logout();
+    } catch (_) {
+    }
     emit(AuthUnauthenticated());
   }
 
@@ -124,7 +145,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       await _repository.forgotPassword(event.email);
       emit(AuthPasswordResetSent());
     } catch (e) {
-      emit(AuthError(e.toString()));
+      String message;
+      if (e is ApiException) {
+        message = e.toUserMessage();
+      } else {
+        message = 'حدث خطأ غير متوقع';
+      }
+      emit(AuthError(message));
     }
   }
 }

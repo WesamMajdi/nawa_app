@@ -14,6 +14,7 @@ class ApiEndpoints {
 
   // Me
   static const String me = '/me';
+  static const String meNotificationRead = '/me/notifications/';  // append {id}/read
   static const String meDashboard = '/me/dashboard';
   static const String meProfile = '/me/profile';
   static const String meEmail = '/me/email';
@@ -29,6 +30,7 @@ class ApiEndpoints {
 
   // Paths
   static const String paths = '/paths';
+  static const String pathEnroll = '/paths/';  // append {slug}/enroll
 
   // Lessons
   static const String lessons = '/lessons';
@@ -59,4 +61,5 @@ class ApiEndpoints {
 
   // Certificates
   static const String certificates = '/certificates';
+  static const String certificateDownload = '/certificates/';  // append {id}/download
 }

@@ -43,13 +43,9 @@ class ChallengeRepository {
     return SubmissionResult.fromJson(response.data);
   }
 
-  Future<DailyChallengeModel?> getDailyChallenge() async {
-    try {
-      final response = await _api.get(ApiEndpoints.challengesDaily);
-      return DailyChallengeModel.fromJson(response.data);
-    } catch (_) {
-      return null;
-    }
+  Future<DailyChallengeModel> getDailyChallenge() async {
+    final response = await _api.get(ApiEndpoints.challengesDaily);
+    return DailyChallengeModel.fromJson(response.data);
   }
 
   Future<void> joinHackathon(String id) async {

@@ -1,51 +1,165 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../core/blocs/path/path_bloc.dart';
 import '../../core/constants/constants.dart';
 import '../../core/helper/extension.dart';
-import '../registration_confirmation/registration_confirmation_screen.dart';
+import '../../core/models/dashboard_model.dart';
+import '../../core/models/path_model.dart';
+import '../certificates_store/certificates_store_screen.dart';
+import '../lesson_viewing/lesson_viewing_screen.dart';
 
-class PathDetailsScreen extends StatelessWidget {
+class PathDetailsScreen extends StatefulWidget {
   final String pathSlug;
   const PathDetailsScreen({super.key, required this.pathSlug});
+
+  @override
+  State<PathDetailsScreen> createState() => _PathDetailsScreenState();
+}
+
+class _PathDetailsScreenState extends State<PathDetailsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    context.read<PathBloc>().add(PathDetailLoadRequested(widget.pathSlug));
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
         children: [
-          ListView(
-            padding: const EdgeInsets.only(
-              left: AppSpacing.containerMargin,
-              right: AppSpacing.containerMargin,
-              top: 88,
-              bottom: 100,
-            ),
-            children: [
-              _BackBreadcrumb(),
-              const SizedBox(height: AppSpacing.stackLG),
-              _HeroSection(),
-              const SizedBox(height: AppSpacing.stackLG),
-              _InstructorCard(),
-              const SizedBox(height: AppSpacing.stackLG),
-              _Roadmap(),
-              const SizedBox(height: AppSpacing.stackLG),
-              _RecentStudents(),
-              const SizedBox(height: 24),
-            ],
+          BlocBuilder<PathBloc, PathState>(
+            builder: (context, state) {
+              if (state is PathLoading) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (state is PathError) {
+                return _ErrorView(
+                  message: state.message,
+                  onRetry: () =>
+                      context.read<PathBloc>().add(PathDetailLoadRequested(widget.pathSlug)),
+                );
+              }
+              final path = switch (state) {
+                PathDetailLoaded(:final path) => path,
+                PathEnrolled(:final path) => path,
+                _ => null,
+              };
+              if (path == null) {
+                return const SizedBox.shrink();
+              }
+              return _PathContent(path: path);
+            },
           ),
-          const _BottomCTA(),
+          BlocBuilder<PathBloc, PathState>(
+            builder: (context, state) {
+              if (state is! PathDetailLoaded && state is! PathEnrolled) {
+                return const SizedBox.shrink();
+              }
+              final path = state is PathDetailLoaded ? state.path : (state as PathEnrolled).path;
+              return _BottomCTA(path: path);
+            },
+          ),
         ],
       ),
     );
   }
 }
 
+class _ErrorView extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+
+  const _ErrorView({required this.message, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.containerMargin),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.cloud_off,
+              size: 56,
+              color: AppColors.onSurfaceVariant,
+            ),
+            const SizedBox(height: AppSpacing.stackMD),
+            Text(
+              'تعذر تحميل المسار',
+              style: AppTypography.headlineMD.copyWith(color: AppColors.onSurface),
+            ),
+            const SizedBox(height: AppSpacing.stackSM),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: AppTypography.bodyMD.copyWith(color: AppColors.onSurfaceVariant),
+            ),
+            const SizedBox(height: AppSpacing.stackLG),
+            ElevatedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh),
+              label: const Text('إعادة المحاولة'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: const Color(0xFF15141B),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.xl),
+                ),
+                elevation: 0,
+                textStyle: AppTypography.headlineMD,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PathContent extends StatelessWidget {
+  final PathDetailModel path;
+  const _PathContent({required this.path});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.only(
+        left: AppSpacing.containerMargin,
+        right: AppSpacing.containerMargin,
+        top: 88,
+        bottom: 100,
+      ),
+      children: [
+        const _BackBreadcrumb(),
+        const SizedBox(height: AppSpacing.stackLG),
+        _HeroSection(path: path),
+        if (path.instructor != null) ...[
+          const SizedBox(height: AppSpacing.stackLG),
+          _InstructorCard(instructor: path.instructor!),
+        ],
+        if (path.modules.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.stackLG),
+          _Roadmap(modules: path.modules),
+        ],
+        const SizedBox(height: AppSpacing.stackLG),
+        _StatsRow(path: path),
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+}
+
 class _BackBreadcrumb extends StatelessWidget {
+  const _BackBreadcrumb();
+
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
         GestureDetector(
-          onTap: () => Navigator.pop(context),
+          onTap: () => context.pop(),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -84,12 +198,14 @@ class _BackBreadcrumb extends StatelessWidget {
 }
 
 class _HeroSection extends StatelessWidget {
+  final PathDetailModel path;
+  const _HeroSection({required this.path});
+
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Banner
         Container(
           height: 192,
           width: double.infinity,
@@ -105,60 +221,85 @@ class _HeroSection extends StatelessWidget {
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(AppRadius.xl),
-            child: Stack(
-              children: [
-                Container(
-                  color: AppColors.surfaceVariant,
-                  child: const Center(
-                    child: Icon(
-                      Icons.code,
-                      size: 64,
-                      color: AppColors.primaryContainer,
-                    ),
-                  ),
-                ),
-                Positioned(
-                  bottom: 16,
-                  right: 16,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _Tag('Flutter'),
-                      const SizedBox(width: 8),
-                      _Tag('Dart'),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+            child: path.coverImageUrl != null && path.coverImageUrl!.isNotEmpty
+                ? Image.network(
+                    path.coverImageUrl!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => _BannerPlaceholder(),
+                  )
+                : const _BannerPlaceholder(),
           ),
         ),
         const SizedBox(height: AppSpacing.stackLG),
-        // Info
+        if (path.tags != null && path.tags!.isNotEmpty) ...[
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final tag in path.tags!) _Tag(tag),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.stackMD),
+        ],
         Text(
-          'مسار مطور تطبيقات Flutter المتقدم',
+          path.title,
           style: AppTypography.headlineXL.copyWith(
             color: AppColors.onSurface,
           ),
         ),
-        const SizedBox(height: AppSpacing.stackSM),
-        Text(
-          'تعلم بناء تطبيقات هواتف ذكية عالية الأداء تدعم أنظمة iOS و Android باستخدام إطار عمل Flutter ولغة Dart. يبدأ المسار من الأساسيات وصولاً إلى المعماريات المتقدمة وربط قواعد البيانات.',
-          style: AppTypography.bodyMD.copyWith(
-            color: AppColors.onSurfaceVariant,
+        if (path.blurb != null && path.blurb!.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.stackSM),
+          Text(
+            path.blurb!,
+            style: AppTypography.bodyMD.copyWith(
+              color: AppColors.onSurfaceVariant,
+            ),
           ),
-        ),
+        ],
         const SizedBox(height: AppSpacing.stackMD),
-        Row(
+        Wrap(
+          spacing: 24,
+          runSpacing: 8,
           children: [
-            _MetaChip(Icons.schedule, '12 أسبوع'),
-            const SizedBox(width: 24),
-            _MetaChip(Icons.bar_chart, 'مستوى متوسط'),
-            const SizedBox(width: 24),
-            _MetaChip(Icons.military_tech, 'شهادة معتمدة'),
+            if (path.estimatedHours != null)
+              _MetaChip(Icons.schedule, '${path.estimatedHours} ساعة'),
+            if (path.level != null) _MetaChip(Icons.bar_chart, _levelLabel(path.level!)),
+            if (path.rating != null)
+              _MetaChip(Icons.star, path.rating!.toStringAsFixed(1)),
+            _MetaChip(
+              Icons.play_circle,
+              '${path.totals?.lessonsTotal ?? 0} درس',
+            ),
           ],
         ),
       ],
+    );
+  }
+}
+
+String _levelLabel(String level) {
+  return switch (level) {
+    'beginner' => 'مبتدئ',
+    'intermediate' || 'mid' => 'متوسط',
+    'advanced' => 'متقدم',
+    _ => level,
+  };
+}
+
+class _BannerPlaceholder extends StatelessWidget {
+  const _BannerPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppColors.surfaceVariant,
+      child: const Center(
+        child: Icon(
+          Icons.code,
+          size: 64,
+          color: AppColors.primaryContainer,
+        ),
+      ),
     );
   }
 }
@@ -211,6 +352,9 @@ class _MetaChip extends StatelessWidget {
 }
 
 class _InstructorCard extends StatelessWidget {
+  final InstructorModel instructor;
+  const _InstructorCard({required this.instructor});
+
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
@@ -239,11 +383,14 @@ class _InstructorCard extends StatelessWidget {
                 border: Border.all(color: AppColors.primary.withAlpha(77)),
                 color: AppColors.surfaceContainerHigh,
               ),
-              child: const Icon(
-                Icons.person,
-                color: AppColors.onSurfaceVariant,
-                size: 32,
-              ),
+              clipBehavior: Clip.antiAlias,
+              child: instructor.avatarUrl != null && instructor.avatarUrl!.isNotEmpty
+                  ? Image.network(
+                      instructor.avatarUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const _InstructorPlaceholder(),
+                    )
+                  : const _InstructorPlaceholder(),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -251,26 +398,30 @@ class _InstructorCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'أحمد محمود',
+                    instructor.name,
                     style: AppTypography.headlineMD.copyWith(
                       color: AppColors.onSurface,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Senior Mobile Developer',
-                    style: AppTypography.labelMD.copyWith(
-                      color: AppColors.primary,
+                  if (instructor.title != null && instructor.title!.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      instructor.title!,
+                      style: AppTypography.labelMD.copyWith(
+                        color: AppColors.primary,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'خبير في تطوير تطبيقات الموبايل بأكثر من 8 سنوات خبرة. قاد فرق تقنية في شركات ناشئة كبرى وساهم في بناء تطبيقات يستخدمها الملايين.',
-                    style: AppTypography.bodyMD.copyWith(
-                      color: AppColors.onSurfaceVariant,
-                      fontSize: 14,
+                  ],
+                  if (instructor.bio != null && instructor.bio!.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      instructor.bio!,
+                      style: AppTypography.bodyMD.copyWith(
+                        color: AppColors.onSurfaceVariant,
+                        fontSize: 14,
+                      ),
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),
@@ -281,7 +432,26 @@ class _InstructorCard extends StatelessWidget {
   }
 }
 
+class _InstructorPlaceholder extends StatelessWidget {
+  const _InstructorPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppColors.surfaceContainerHigh,
+      child: const Icon(
+        Icons.person,
+        color: AppColors.onSurfaceVariant,
+        size: 32,
+      ),
+    );
+  }
+}
+
 class _Roadmap extends StatelessWidget {
+  final List<ModuleModel> modules;
+  const _Roadmap({required this.modules});
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -296,7 +466,6 @@ class _Roadmap extends StatelessWidget {
         const SizedBox(height: AppSpacing.stackLG),
         Stack(
           children: [
-            // Timeline line
             Positioned.fill(
               child: Align(
                 alignment: Alignment.centerRight,
@@ -309,29 +478,11 @@ class _Roadmap extends StatelessWidget {
             ),
             Column(
               children: [
-                _Module(
-                  title: 'مقدمة',
-                  description: 'نظرة عامة على بيئة العمل وإعداد الأدوات اللازمة للبدء.',
-                  lessons: '3 دروس',
-                  exercise: '1 تمرين',
-                  isUnlocked: true,
-                ),
-                const SizedBox(height: AppSpacing.stackLG),
-                _Module(
-                  title: 'أساسيات لغة Dart',
-                  description: 'المتغيرات، الدوال، البرمجة الكائنية التوجه (OOP) في Dart.',
-                  lessons: '8 دروس',
-                  exercise: '3 تمارين',
-                  isUnlocked: false,
-                ),
-                const SizedBox(height: AppSpacing.stackLG),
-                _Module(
-                  title: 'بناء الواجهات',
-                  description: 'التعامل مع الـ Widgets، تصميم واجهات مستخدم متجاوبة.',
-                  lessons: '12 درس',
-                  exercise: 'مشروع مصغر',
-                  isUnlocked: false,
-                ),
+                for (var i = 0; i < modules.length; i++) ...[
+                  _Module(module: modules[i]),
+                  if (i != modules.length - 1)
+                    const SizedBox(height: AppSpacing.stackLG),
+                ],
               ],
             ),
           ],
@@ -342,22 +493,12 @@ class _Roadmap extends StatelessWidget {
 }
 
 class _Module extends StatelessWidget {
-  final String title;
-  final String description;
-  final String lessons;
-  final String exercise;
-  final bool isUnlocked;
-
-  const _Module({
-    required this.title,
-    required this.description,
-    required this.lessons,
-    required this.exercise,
-    required this.isUnlocked,
-  });
+  final ModuleModel module;
+  const _Module({required this.module});
 
   @override
   Widget build(BuildContext context) {
+    final isUnlocked = !module.isLocked;
     return Padding(
       padding: const EdgeInsets.only(right: 40),
       child: ClipRRect(
@@ -394,7 +535,7 @@ class _Module extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            title,
+                            module.title,
                             style: AppTypography.headlineMD.copyWith(
                               color: AppColors.onSurface,
                             ),
@@ -409,7 +550,7 @@ class _Module extends StatelessWidget {
                             borderRadius: BorderRadius.circular(AppRadius.sm),
                           ),
                           child: Text(
-                            isUnlocked ? 'مفتوح' : 'مغلق',
+                            _moduleStatusLabel(module),
                             style: AppTypography.labelMD.copyWith(
                               color: isUnlocked ? AppColors.primary : AppColors.onSurfaceVariant,
                               fontSize: 12,
@@ -418,27 +559,102 @@ class _Module extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      description,
-                      style: AppTypography.bodyMD.copyWith(
-                        color: AppColors.onSurfaceVariant,
-                        fontSize: 14,
+                    if (module.description != null && module.description!.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        module.description!,
+                        style: AppTypography.bodyMD.copyWith(
+                          color: AppColors.onSurfaceVariant,
+                          fontSize: 14,
+                        ),
                       ),
-                    ),
+                    ],
                     const SizedBox(height: 12),
                     Row(
                       children: [
-                        _ModuleMeta(Icons.play_circle, lessons),
-                        const SizedBox(width: 16),
-                        _ModuleMeta(Icons.assignment, exercise),
+                        _ModuleMeta(Icons.play_circle, '${module.lessonsCount} درس'),
+                        if (module.doneCount > 0) ...[
+                          const SizedBox(width: 16),
+                          _ModuleMeta(Icons.check_circle, '${module.doneCount} مكتمل'),
+                        ],
                       ],
                     ),
+                    if (module.lessons.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      for (final lesson in module.lessons)
+                        _LessonTile(
+                          lesson: lesson,
+                          locked: module.isLocked,
+                        ),
+                    ],
                   ],
                 ),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+String _moduleStatusLabel(ModuleModel module) {
+  if (module.isDone) return 'مكتمل';
+  if (module.isCurrent) return 'الحالي';
+  return module.isLocked ? 'مغلق' : 'مفتوح';
+}
+
+class _LessonTile extends StatelessWidget {
+  final LessonItemModel lesson;
+  final bool locked;
+
+  const _LessonTile({required this.lesson, required this.locked});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: locked
+          ? null
+          : () => context.push(LessonViewingScreen(lessonId: lesson.id)),
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+        child: Row(
+          children: [
+            Icon(
+              lesson.isCurrent
+                  ? Icons.play_circle_fill
+                  : lesson.status == 'completed'
+                      ? Icons.check_circle
+                      : locked
+                          ? Icons.lock
+                          : Icons.play_circle_outline,
+              size: 20,
+              color: lesson.isCurrent
+                  ? AppColors.primary
+                  : lesson.status == 'completed'
+                      ? const Color(0xFF5BE49B)
+                      : AppColors.onSurfaceVariant,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                lesson.title,
+                style: AppTypography.bodyMD.copyWith(
+                  color: locked ? AppColors.onSurfaceVariant : AppColors.onSurface,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+            if (lesson.durationMinutes != null)
+              Text(
+                '${lesson.durationMinutes} د',
+                style: AppTypography.labelMD.copyWith(
+                  color: AppColors.onSurfaceVariant,
+                  fontSize: 12,
+                ),
+              ),
+          ],
         ),
       ),
     );
@@ -469,40 +685,59 @@ class _ModuleMeta extends StatelessWidget {
   }
 }
 
-class _RecentStudents extends StatelessWidget {
+class _StatsRow extends StatelessWidget {
+  final PathDetailModel path;
+  const _StatsRow({required this.path});
+
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    final totals = path.totals;
+    return Row(
       children: [
-        Row(
-          children: [
-            Text(
-              'منضمون حديثاً',
-              style: AppTypography.headlineMD.copyWith(
-                color: AppColors.onSurface,
-              ),
-            ),
-            const Spacer(),
-            Text(
-              '+240 طالب',
-              style: AppTypography.labelMD.copyWith(
-                color: AppColors.primary,
-              ),
-            ),
-          ],
+        if (totals != null) ...[
+          _StatItem(
+            icon: Icons.play_circle,
+            value: '${totals.lessonsDone}/${totals.lessonsTotal}',
+            label: 'درس مكتمل',
+          ),
+          const SizedBox(width: 24),
+        ],
+        if (path.instructor?.studentsCount != null) ...[
+          _StatItem(
+            icon: Icons.people,
+            value: '+${path.instructor!.studentsCount}',
+            label: 'طالب',
+          ),
+          const SizedBox(width: 24),
+        ],
+        _StatItem(
+          icon: Icons.military_tech,
+          value: path.progressPct.toString(),
+          label: 'نسبة التقدم',
         ),
-        const SizedBox(height: 16),
-        SizedBox(
-          height: 40,
-          child: Stack(
-            children: [
-              Positioned(right: 0, child: const _Avatar(icon: Icons.person)),
-              Positioned(right: 16, child: const _Avatar(icon: Icons.person)),
-              Positioned(right: 32, child: const _Avatar(icon: Icons.person)),
-              Positioned(right: 48, child: const _Avatar(icon: Icons.person)),
-              Positioned(right: 64, child: const _AvatarOverflow()),
-            ],
+      ],
+    );
+  }
+}
+
+class _StatItem extends StatelessWidget {
+  final IconData icon;
+  final String value;
+  final String label;
+
+  const _StatItem({required this.icon, required this.value, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 14, color: AppColors.primary),
+        const SizedBox(width: 8),
+        Text(
+          '$value $label',
+          style: AppTypography.labelMD.copyWith(
+            color: AppColors.onSurfaceVariant,
           ),
         ),
       ],
@@ -510,57 +745,13 @@ class _RecentStudents extends StatelessWidget {
   }
 }
 
-class _Avatar extends StatelessWidget {
-  final IconData icon;
-
-  const _Avatar({required this.icon});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 40,
-      height: 40,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: AppColors.surfaceVariant,
-        border: Border.all(color: AppColors.background, width: 2),
-      ),
-      child: Icon(icon, size: 16, color: AppColors.onSurfaceVariant),
-    );
-  }
-}
-
-class _AvatarOverflow extends StatelessWidget {
-  const _AvatarOverflow();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 40,
-      height: 40,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: AppColors.primary.withAlpha(51),
-        border: Border.all(color: AppColors.background, width: 2),
-      ),
-      child: Center(
-        child: Text(
-          '+99',
-          style: AppTypography.labelMD.copyWith(
-            color: AppColors.primary,
-            fontSize: 12,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _BottomCTA extends StatelessWidget {
-  const _BottomCTA();
+  final PathDetailModel path;
+  const _BottomCTA({required this.path});
 
   @override
   Widget build(BuildContext context) {
+    final isEnrolled = path.isEnrolled || path.progressPct > 0;
     return Align(
       alignment: Alignment.bottomCenter,
       child: Container(
@@ -573,53 +764,118 @@ class _BottomCTA extends StatelessWidget {
         ),
         child: SafeArea(
           top: false,
-          child: Row(
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'مجاناً',
-                    style: AppTypography.headlineMD.copyWith(
-                      color: AppColors.onSurface,
-                    ),
-                  ),
-                  Text(
-                    '500\$',
-                    style: AppTypography.bodyMD.copyWith(
-                      color: AppColors.onSurfaceVariant,
-                      fontSize: 12,
-                      decoration: TextDecoration.lineThrough,
-                    ),
-                  ),
-                ],
+          child: isEnrolled
+              ? _EnrolledCTA(path: path)
+              : _EnrollCTA(path: path),
+        ),
+      ),
+    );
+  }
+}
+
+class _EnrollCTA extends StatelessWidget {
+  final PathDetailModel path;
+  const _EnrollCTA({required this.path});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: ElevatedButton(
+            onPressed: () {
+              if (path.requiresUpgrade) {
+                context.push(const CertificatesStoreScreen());
+                return;
+              }
+              context.read<PathBloc>().add(PathEnrollRequested(path.slug));
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: const Color(0xFF15141B),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.xl),
               ),
-              const Spacer(),
-              SizedBox(
-                width: 200,
-                child: ElevatedButton(
-                  onPressed: () => context.push(const RegistrationConfirmationScreen()),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: const Color(0xFF15141B),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.xl),
-                    ),
-                    elevation: 0,
-                    textStyle: AppTypography.headlineMD,
-                  ).copyWith(
-                    shadowColor: WidgetStateProperty.all(Colors.transparent),
-                    surfaceTintColor: WidgetStateProperty.all(Colors.transparent),
-                  ),
-                  child: const Text('سجل الآن في المسار'),
+              elevation: 0,
+              textStyle: AppTypography.headlineMD,
+            ).copyWith(
+              shadowColor: WidgetStateProperty.all(Colors.transparent),
+              surfaceTintColor: WidgetStateProperty.all(Colors.transparent),
+            ),
+            child: Text(path.requiresUpgrade ? 'الترقية للانضمام للمسار' : 'سجل الآن في المسار'),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _EnrolledCTA extends StatelessWidget {
+  final PathDetailModel path;
+  const _EnrolledCTA({required this.path});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(AppRadius.full),
+                child: LinearProgressIndicator(
+                  value: path.progressPct / 100,
+                  minHeight: 6,
+                  backgroundColor: AppColors.surfaceVariant,
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '${path.progressPct}% مكتمل',
+                style: AppTypography.labelMD.copyWith(
+                  color: AppColors.onSurfaceVariant,
                 ),
               ),
             ],
           ),
         ),
-      ),
+        const SizedBox(width: 16),
+        SizedBox(
+          width: 180,
+          child: ElevatedButton(
+            onPressed: () {
+              final current = path.modules
+                  .where((m) => !m.isLocked)
+                  .expand((m) => m.lessons)
+                  .toList();
+              final next = current
+                  .where((l) => l.status != 'completed')
+                  .firstOrNull ?? current.firstOrNull;
+              if (next != null) {
+                context.push(LessonViewingScreen(lessonId: next.id));
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: const Color(0xFF15141B),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.xl),
+              ),
+              elevation: 0,
+              textStyle: AppTypography.headlineMD,
+            ).copyWith(
+              shadowColor: WidgetStateProperty.all(Colors.transparent),
+              surfaceTintColor: WidgetStateProperty.all(Colors.transparent),
+            ),
+            child: const Text('متابعة التعلم'),
+          ),
+        ),
+      ],
     );
   }
 }

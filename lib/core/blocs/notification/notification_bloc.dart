@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../../models/notification_model.dart';
 import '../../repositories/notification_repository.dart';
+import '../../network/api_exceptions.dart';
 
 // Events
 sealed class NotificationEvent extends Equatable {
@@ -81,7 +82,13 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
         cursor: result.pageInfo.nextCursor,
       ));
     } catch (e) {
-      emit(NotificationError(e.toString()));
+      String message;
+      if (e is ApiException) {
+        message = e.toUserMessage();
+      } else {
+        message = 'حدث خطأ غير متوقع';
+      }
+      emit(NotificationError(message));
     }
   }
 
@@ -96,26 +103,40 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
         hasMore: result.pageInfo.hasNext,
         cursor: result.pageInfo.nextCursor,
       ));
-    } catch (e) {
-      emit(NotificationError(e.toString()));
+    } catch (_) {
+      emit(current);
     }
   }
 
   Future<void> _onMarkAsRead(NotificationMarkAsRead event, Emitter<NotificationState> emit) async {
+    emit(NotificationLoading());
     try {
       await _repository.markAsRead(event.id);
       add(NotificationLoadRequested());
     } catch (e) {
-      emit(NotificationError(e.toString()));
+      String message;
+      if (e is ApiException) {
+        message = e.toUserMessage();
+      } else {
+        message = 'حدث خطأ غير متوقع';
+      }
+      emit(NotificationError(message));
     }
   }
 
   Future<void> _onMarkAllAsRead(NotificationMarkAllAsRead event, Emitter<NotificationState> emit) async {
+    emit(NotificationLoading());
     try {
       await _repository.markAllAsRead();
       add(NotificationLoadRequested());
     } catch (e) {
-      emit(NotificationError(e.toString()));
+      String message;
+      if (e is ApiException) {
+        message = e.toUserMessage();
+      } else {
+        message = 'حدث خطأ غير متوقع';
+      }
+      emit(NotificationError(message));
     }
   }
 }

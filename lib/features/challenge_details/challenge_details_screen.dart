@@ -1,39 +1,137 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:nawa_flutter/core/blocs/challenge/challenge_bloc.dart';
 import 'package:nawa_flutter/core/constants/constants.dart';
+import 'package:nawa_flutter/core/models/challenge_model.dart';
 
-class ChallengeDetailsScreen extends StatelessWidget {
+class ChallengeDetailsScreen extends StatefulWidget {
   final String challengeId;
   const ChallengeDetailsScreen({super.key, required this.challengeId});
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Stack(
-        children: [
-          ListView(
-            padding: const EdgeInsets.only(
-              left: AppSpacing.containerMargin,
-              right: AppSpacing.containerMargin,
-              top: 72,
-              bottom: 100,
-            ),
-            children: [
-              const _HeroSection(),
-              const SizedBox(height: AppSpacing.stackMD),
-              const _DescriptionSection(),
-              const SizedBox(height: AppSpacing.stackLG),
-              const _RewardsSection(),
-              const SizedBox(height: AppSpacing.stackLG),
-              const _RequirementsSection(),
-              const SizedBox(height: AppSpacing.stackLG),
-              const _ImageSection(),
-              const SizedBox(height: 24),
-            ],
+  State<ChallengeDetailsScreen> createState() => _ChallengeDetailsScreenState();
+}
+
+class _ChallengeDetailsScreenState extends State<ChallengeDetailsScreen> {
+  ChallengeDetailModel? _challenge;
+
+  @override
+  void initState() {
+    super.initState();
+    context.read<ChallengeBloc>().add(ChallengeDetailLoadRequested(widget.challengeId));
+  }
+
+  void _showTestResults(SubmissionResult result) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surfaceContainerHigh,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.xl)),
+        title: Text(result.solved ? 'تم الحل بنجاح!' : 'لم يتم الحل'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('الاختبارات: ${result.submission.testsPassed}/${result.submission.testsTotal}'),
+            if (result.xpAwarded != null) Text('+${result.xpAwarded} XP'),
+            if (result.remainingToday != null) Text('المتبقي اليوم: ${result.remainingToday} محاولات'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('حسناً'),
           ),
-          const _TopBar(),
-          const _BottomCta(),
         ],
       ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocConsumer<ChallengeBloc, ChallengeState>(
+      listener: (context, state) {
+        if (state is ChallengeSubmitted) {
+          _showTestResults(state.result);
+        }
+        if (state is ChallengeError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+            ),
+          );
+        }
+      },
+      builder: (context, state) {
+        if (state is ChallengeDetailLoaded) {
+          _challenge = state.challenge;
+        }
+        if (state is ChallengeLoading || state is ChallengeInitial) {
+          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        }
+        if (state is ChallengeError && _challenge == null) {
+          return Scaffold(
+            body: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.containerMargin),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.error_outline, size: 48, color: AppColors.error),
+                    const SizedBox(height: 16),
+                    Text(state.message, textAlign: TextAlign.center, style: AppTypography.bodyMD),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: () => context.read<ChallengeBloc>().add(
+                        ChallengeDetailLoadRequested(widget.challengeId),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: AppColors.onPrimary,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.xl)),
+                      ),
+                      child: const Text('إعادة المحاولة'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+        final challenge = _challenge;
+        if (challenge == null) return const SizedBox.shrink();
+        return Scaffold(
+          body: Stack(
+            children: [
+              ListView(
+                padding: const EdgeInsets.only(
+                  left: AppSpacing.containerMargin,
+                  right: AppSpacing.containerMargin,
+                  top: 72,
+                  bottom: 100,
+                ),
+                children: [
+                  _HeroSection(challenge: challenge),
+                  const SizedBox(height: AppSpacing.stackMD),
+                  _DescriptionSection(challenge: challenge),
+                  const SizedBox(height: AppSpacing.stackLG),
+                  _RewardsSection(challenge: challenge),
+                  const SizedBox(height: AppSpacing.stackLG),
+                  _RequirementsSection(challenge: challenge),
+                  const SizedBox(height: AppSpacing.stackLG),
+                  if (challenge.imageUrl != null) _ImageSection(challenge: challenge),
+                  const SizedBox(height: 24),
+                ],
+              ),
+              const _TopBar(),
+              _BottomCta(challenge: challenge),
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -44,41 +142,30 @@ class _TopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.containerMargin,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.containerMargin),
       height: 64,
       decoration: BoxDecoration(
         color: AppColors.surface.withAlpha(153),
-        border: Border(
-          bottom: BorderSide(color: AppColors.onSurfaceVariant.withAlpha(25)),
-        ),
+        border: Border(bottom: BorderSide(color: AppColors.onSurfaceVariant.withAlpha(25))),
       ),
       child: Row(
         children: [
           GestureDetector(
-            onTap: () => Navigator.pop(context),
+            onTap: () => context.pop(),
             child: Container(
               padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(AppRadius.full),
-              ),
+              decoration: BoxDecoration(borderRadius: BorderRadius.circular(AppRadius.full)),
               child: const Icon(Icons.arrow_forward, color: AppColors.primary),
             ),
           ),
           const SizedBox(width: AppSpacing.stackSM),
-          Text(
-            'تفاصيل التحدي',
-            style: AppTypography.headlineMD.copyWith(color: AppColors.primary),
-          ),
+          Text('تفاصيل التحدي', style: AppTypography.headlineMD.copyWith(color: AppColors.primary)),
           const Spacer(),
           GestureDetector(
             onTap: () {},
             child: Container(
               padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(AppRadius.full),
-              ),
+              decoration: BoxDecoration(borderRadius: BorderRadius.circular(AppRadius.full)),
               child: const Icon(Icons.more_vert, color: AppColors.onSurface),
             ),
           ),
@@ -89,30 +176,29 @@ class _TopBar extends StatelessWidget {
 }
 
 class _HeroSection extends StatelessWidget {
-  const _HeroSection();
+  final ChallengeDetailModel challenge;
+  const _HeroSection({required this.challenge});
 
   @override
   Widget build(BuildContext context) {
+    final remaining = challenge.endsAt?.difference(DateTime.now());
+    final days = remaining != null ? remaining.inDays.clamp(0, 999).toString().padLeft(2, '0') : '00';
+    final hours = remaining != null ? (remaining.inHours % 24).clamp(0, 99).toString().padLeft(2, '0') : '00';
+    final minutes = remaining != null ? (remaining.inMinutes % 60).clamp(0, 99).toString().padLeft(2, '0') : '00';
+
     return Stack(
       clipBehavior: Clip.none,
       children: [
         Positioned(
-          top: -40,
-          left: 0,
-          right: 0,
+          top: -40, left: 0, right: 0,
           child: Center(
             child: Container(
-              width: 256,
-              height: 256,
+              width: 256, height: 256,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: AppColors.primaryContainer.withAlpha(25),
                 boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primaryContainer.withAlpha(25),
-                    blurRadius: 80,
-                    spreadRadius: 20,
-                  ),
+                  BoxShadow(color: AppColors.primaryContainer.withAlpha(25), blurRadius: 80, spreadRadius: 20),
                 ],
               ),
             ),
@@ -121,69 +207,61 @@ class _HeroSection extends StatelessWidget {
         Column(
           children: [
             const SizedBox(height: AppSpacing.stackLG),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(AppRadius.full),
-                color: AppColors.primaryContainer.withAlpha(25),
-                border: Border.all(
-                  color: AppColors.primaryContainer.withAlpha(51),
+            if (challenge.participantsCount != null)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(AppRadius.full),
+                  color: AppColors.primaryContainer.withAlpha(25),
+                  border: Border.all(color: AppColors.primaryContainer.withAlpha(51)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.group, size: 18, color: AppColors.primary),
+                    const SizedBox(width: AppSpacing.stackSM),
+                    Text(
+                      formatChallengeNumber(challenge.participantsCount!),
+                      style: AppTypography.labelMD.copyWith(color: AppColors.primary, fontSize: 14),
+                    ),
+                  ],
                 ),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.group, size: 18, color: AppColors.primary),
-                  const SizedBox(width: AppSpacing.stackSM),
-                  Text(
-                    '1,245 مشارك',
-                    style: AppTypography.labelMD.copyWith(
-                      color: AppColors.primary,
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
-              ),
-            ),
             const SizedBox(height: AppSpacing.stackMD),
             Text(
-              'تحدي خوارزميات الذكاء الاصطناعي',
+              challenge.title,
               style: AppTypography.headlineXL.copyWith(fontSize: 28),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: AppSpacing.stackMD),
-            Text(
-              'ينتهي خلال',
-              style: AppTypography.labelMD.copyWith(
-                color: AppColors.onSurfaceVariant,
+            if (challenge.endsAt != null) ...[
+              const SizedBox(height: AppSpacing.stackMD),
+              Text(
+                remaining?.isNegative == true ? 'انتهى التحدي' : 'ينتهي خلال',
+                style: AppTypography.labelMD.copyWith(color: AppColors.onSurfaceVariant),
               ),
-            ),
-            const SizedBox(height: AppSpacing.stackSM),
-            Directionality(
-              textDirection: TextDirection.ltr,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _TimerBlock(value: '02'),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 8),
-                    child: Text(
-                      ':',
-                      style: TextStyle(color: AppColors.primary, fontSize: 32),
-                    ),
+              if (remaining?.isNegative != true) ...[
+                const SizedBox(height: AppSpacing.stackSM),
+                Directionality(
+                  textDirection: TextDirection.ltr,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _TimerBlock(value: days),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 8),
+                        child: Text(':', style: TextStyle(color: AppColors.primary, fontSize: 32)),
+                      ),
+                      _TimerBlock(value: hours),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 8),
+                        child: Text(':', style: TextStyle(color: AppColors.primary, fontSize: 32)),
+                      ),
+                      _TimerBlock(value: minutes),
+                    ],
                   ),
-                  _TimerBlock(value: '07'),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 8),
-                    child: Text(
-                      ':',
-                      style: TextStyle(color: AppColors.primary, fontSize: 32),
-                    ),
-                  ),
-                  _TimerBlock(value: '22'),
-                ],
-              ),
-            ),
+                ),
+              ],
+            ],
           ],
         ),
       ],
@@ -193,7 +271,6 @@ class _HeroSection extends StatelessWidget {
 
 class _TimerBlock extends StatelessWidget {
   final String value;
-
   const _TimerBlock({required this.value});
 
   @override
@@ -219,7 +296,8 @@ class _TimerBlock extends StatelessWidget {
 }
 
 class _DescriptionSection extends StatelessWidget {
-  const _DescriptionSection();
+  final ChallengeDetailModel challenge;
+  const _DescriptionSection({required this.challenge});
 
   @override
   Widget build(BuildContext context) {
@@ -236,28 +314,21 @@ class _DescriptionSection extends StatelessWidget {
           Row(
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 40, height: 40,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(AppRadius.lg),
                   color: AppColors.primaryContainer.withAlpha(25),
                 ),
-                child: const Icon(
-                  Icons.description,
-                  color: AppColors.primary,
-                  size: 20,
-                ),
+                child: const Icon(Icons.description, color: AppColors.primary, size: 20),
               ),
               const SizedBox(width: AppSpacing.stackSM),
-              Text('عن التحدي', style: AppTypography.headlineMD),
+              const Text('عن التحدي', style: AppTypography.headlineMD),
             ],
           ),
           const SizedBox(height: AppSpacing.stackMD),
           Text(
-            'قم ببناء نموذج تعلم آلي لتوقع أنماط استهلاك البيانات بكفاءة عالية باستخدام بايثون. يهدف هذا التحدي إلى تحسين دقة التوقعات بنسبة لا تقل عن 92% مع مراعاة استهلاك الموارد البرمجية.',
-            style: AppTypography.bodyLG.copyWith(
-              color: AppColors.onSurfaceVariant,
-            ),
+            challenge.description ?? 'لا يوجد وصف',
+            style: AppTypography.bodyLG.copyWith(color: AppColors.onSurfaceVariant),
           ),
         ],
       ),
@@ -266,38 +337,40 @@ class _DescriptionSection extends StatelessWidget {
 }
 
 class _RewardsSection extends StatelessWidget {
-  const _RewardsSection();
+  final ChallengeDetailModel challenge;
+  const _RewardsSection({required this.challenge});
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('الجوائز والمكافآت', style: AppTypography.headlineMD),
+        const Text('الجوائز والمكافآت', style: AppTypography.headlineMD),
         const SizedBox(height: AppSpacing.gutter),
         Row(
           children: [
-            Expanded(
-              child: _RewardCard(
-                icon: Icons.military_tech,
-                iconBg: AppColors.secondaryContainer.withAlpha(25),
-                iconColor: AppColors.secondary,
-                iconFill: true,
-                title: '5,000 XP',
-                subtitle: 'نقاط خبرة تقنية',
+            if (challenge.xpReward != null)
+              Expanded(
+                child: _RewardCard(
+                  icon: Icons.military_tech,
+                  iconBg: AppColors.secondaryContainer.withAlpha(25),
+                  iconColor: AppColors.secondary,
+                  title: '${challenge.xpReward!} XP',
+                  subtitle: 'نقاط خبرة تقنية',
+                ),
               ),
-            ),
-            const SizedBox(width: AppSpacing.gutter),
-            Expanded(
-              child: _RewardCard(
-                icon: Icons.architecture,
-                iconBg: AppColors.primaryContainer.withAlpha(25),
-                iconColor: AppColors.primary,
-                iconFill: false,
-                title: 'شارة معمار',
-                subtitle: 'Architect Badge',
+            if (challenge.xpReward != null && challenge.badgeReward != null)
+              const SizedBox(width: AppSpacing.gutter),
+            if (challenge.badgeReward != null)
+              Expanded(
+                child: _RewardCard(
+                  icon: Icons.architecture,
+                  iconBg: AppColors.primaryContainer.withAlpha(25),
+                  iconColor: AppColors.primary,
+                  title: challenge.badgeReward!,
+                  subtitle: 'Architect Badge',
+                ),
               ),
-            ),
           ],
         ),
       ],
@@ -309,7 +382,6 @@ class _RewardCard extends StatelessWidget {
   final IconData icon;
   final Color iconBg;
   final Color iconColor;
-  final bool iconFill;
   final String title;
   final String subtitle;
 
@@ -317,7 +389,6 @@ class _RewardCard extends StatelessWidget {
     required this.icon,
     required this.iconBg,
     required this.iconColor,
-    required this.iconFill,
     required this.title,
     required this.subtitle,
   });
@@ -334,8 +405,7 @@ class _RewardCard extends StatelessWidget {
       child: Column(
         children: [
           Container(
-            width: 56,
-            height: 56,
+            width: 56, height: 56,
             decoration: BoxDecoration(shape: BoxShape.circle, color: iconBg),
             child: Icon(icon, color: iconColor, size: 28),
           ),
@@ -343,18 +413,13 @@ class _RewardCard extends StatelessWidget {
           Text(
             title,
             style: AppTypography.headlineMD.copyWith(
-              color: iconColor == AppColors.secondary
-                  ? AppColors.primary
-                  : AppColors.onSurface,
+              color: iconColor == AppColors.secondary ? AppColors.primary : AppColors.onSurface,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             subtitle,
-            style: AppTypography.labelMD.copyWith(
-              color: AppColors.onSurfaceVariant,
-              fontSize: 14,
-            ),
+            style: AppTypography.labelMD.copyWith(color: AppColors.onSurfaceVariant, fontSize: 14),
           ),
         ],
       ),
@@ -363,43 +428,69 @@ class _RewardCard extends StatelessWidget {
 }
 
 class _RequirementsSection extends StatelessWidget {
-  const _RequirementsSection();
+  final ChallengeDetailModel challenge;
+  const _RequirementsSection({required this.challenge});
+
+  List<_RequirementItemData> _parseRequirements() {
+    final md = challenge.requirementsMd ?? '';
+    if (md.isEmpty) return [];
+    final lines = md.split('\n').where((l) => l.trim().isNotEmpty).toList();
+    return lines.map((line) {
+      final cleaned = line.replaceAll(RegExp(r'^[#*\-\s]+'), '');
+      final parts = cleaned.split('：');
+      if (parts.length >= 2) {
+        return _RequirementItemData(title: parts[0].trim(), body: parts.sublist(1).join('：').trim());
+      }
+      final colonParts = cleaned.split(':');
+      if (colonParts.length >= 2) {
+        return _RequirementItemData(title: colonParts[0].trim(), body: colonParts.sublist(1).join(':').trim());
+      }
+      return _RequirementItemData(title: cleaned, body: '');
+    }).toList();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final requirements = _parseRequirements();
+    if (requirements.isEmpty && (challenge.description == null || challenge.description!.isEmpty)) {
+      return const SizedBox.shrink();
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('المتطلبات التقنية', style: AppTypography.headlineMD),
+        const Text('المتطلبات التقنية', style: AppTypography.headlineMD),
         const SizedBox(height: AppSpacing.gutter),
-        _RequirementItem(
-          title: 'لغة البرمجة',
-          body: 'استخدام Python 3.9 أو إصدار أحدث حصراً.',
-        ),
-        const SizedBox(height: AppSpacing.stackSM),
-        _RequirementItem(
-          title: 'دقة النموذج',
-          body: 'يجب أن تتخطى دقة التوقعات (Accuracy) حاجز الـ 90%.',
-        ),
-        const SizedBox(height: AppSpacing.stackSM),
-        _RequirementItem(
-          title: 'البيانات الضخمة',
-          body: 'القدرة على معالجة ملفات بيانات بحجم يزيد عن 2 جيجابايت.',
-        ),
-        const SizedBox(height: AppSpacing.stackSM),
-        _RequirementItem(
-          title: 'التوثيق',
-          body: 'إرفاق ملف README يشرح كيفية تشغيل الكود بوضوح.',
-        ),
+        ...requirements.map((r) => Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.stackSM),
+          child: _RequirementItem(title: r.title, body: r.body),
+        )),
+        if (challenge.languageCode != null)
+          Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.stackSM),
+            child: _RequirementItem(
+              title: 'لغة البرمجة',
+              body: 'استخدام ${languageDisplayName(challenge.languageCode!)}',
+            ),
+          ),
+        if (challenge.solvedCount != null)
+          _RequirementItem(
+            title: 'عدد الحلول',
+            body: 'تم حل التحدي ${challenge.solvedCount} مرة',
+          ),
       ],
     );
   }
 }
 
+class _RequirementItemData {
+  final String title;
+  final String body;
+  const _RequirementItemData({required this.title, required this.body});
+}
+
 class _RequirementItem extends StatelessWidget {
   final String title;
   final String body;
-
   const _RequirementItem({required this.title, required this.body});
 
   @override
@@ -420,17 +511,11 @@ class _RequirementItem extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: AppTypography.headlineMD.copyWith(fontSize: 16),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  body,
-                  style: AppTypography.bodyMD.copyWith(
-                    color: AppColors.onSurfaceVariant,
-                  ),
-                ),
+                Text(title, style: AppTypography.headlineMD.copyWith(fontSize: 16)),
+                if (body.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(body, style: AppTypography.bodyMD.copyWith(color: AppColors.onSurfaceVariant)),
+                ],
               ],
             ),
           ),
@@ -441,7 +526,8 @@ class _RequirementItem extends StatelessWidget {
 }
 
 class _ImageSection extends StatelessWidget {
-  const _ImageSection();
+  final ChallengeDetailModel challenge;
+  const _ImageSection({required this.challenge});
 
   @override
   Widget build(BuildContext context) {
@@ -452,20 +538,21 @@ class _ImageSection extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.xl * 2),
         color: AppColors.surfaceContainerHigh.withAlpha(153),
         border: Border.all(color: AppColors.onSurfaceVariant.withAlpha(12)),
-        image: const DecorationImage(
-          image: NetworkImage(
-            'https://lh3.googleusercontent.com/aida-public/AB6AXuBW4R2kEE1Z4OUF500vUeHWZ5_eX7BpUE50sSO5CSxswsbEzrVsqvwKxGXm9AbAQH2X529O9BZfYk4JQx9wQPEcKNQfFvdQU8QbNfxZC0U_dfWncMBJGqPTSi1x2WKu5hL88tRfStXSLrS-WA5-qRd2WnJ-6AXcJwjF1rJG1prN2tzz3mK9o-BxmI-1U_GN_guJTCkOyudhfqcwY0wyr_Cu6j19KhLys8IaZP8frqLn5yETnbO6MqbX8HENBG_QoO4LUk_HojqffQ',
-          ),
-          fit: BoxFit.cover,
-          opacity: 0.8,
-        ),
+        image: challenge.imageUrl != null
+            ? DecorationImage(
+                image: NetworkImage(challenge.imageUrl!),
+                fit: BoxFit.cover,
+                opacity: 0.8,
+              )
+            : null,
       ),
     );
   }
 }
 
 class _BottomCta extends StatelessWidget {
-  const _BottomCta();
+  final ChallengeDetailModel challenge;
+  const _BottomCta({required this.challenge});
 
   @override
   Widget build(BuildContext context) {
@@ -477,11 +564,7 @@ class _BottomCta extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Colors.transparent,
-              AppColors.background.withAlpha(242),
-              AppColors.background,
-            ],
+            colors: [Colors.transparent, AppColors.background.withAlpha(242), AppColors.background],
           ),
         ),
         child: SafeArea(
@@ -490,28 +573,29 @@ class _BottomCta extends StatelessWidget {
             width: double.infinity,
             height: 56,
             child: ElevatedButton(
-              onPressed: () {},
-              style:
-                  ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: AppColors.onPrimaryContainer,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.xl),
-                    ),
-                    elevation: 0,
-                    textStyle: AppTypography.headlineMD,
-                  ).copyWith(
-                    shadowColor: WidgetStateProperty.all(Colors.transparent),
-                    surfaceTintColor: WidgetStateProperty.all(
-                      Colors.transparent,
-                    ),
-                  ),
-              child: const Row(
+              onPressed: () {
+                context.read<ChallengeBloc>().add(ChallengeSubmitRequested(
+                  id: challenge.id,
+                  sourceCode: challenge.starterCode ?? '',
+                  languageCode: challenge.languageCode ?? '',
+                ));
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: AppColors.onPrimaryContainer,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.xl)),
+                elevation: 0,
+                textStyle: AppTypography.headlineMD,
+              ).copyWith(
+                shadowColor: WidgetStateProperty.all(Colors.transparent),
+                surfaceTintColor: WidgetStateProperty.all(Colors.transparent),
+              ),
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('ابدأ التحدي الآن'),
-                  SizedBox(width: 8),
-                  Icon(Icons.play_arrow, size: 20),
+                  Text(challenge.solved ? 'تم الحل' : 'ابدأ التحدي الآن'),
+                  const SizedBox(width: 8),
+                  Icon(challenge.solved ? Icons.check : Icons.play_arrow, size: 20),
                 ],
               ),
             ),
@@ -519,5 +603,25 @@ class _BottomCta extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+String formatChallengeNumber(int number) {
+  if (number >= 1000000) return '${(number / 1000000).toStringAsFixed(1)}M';
+  if (number >= 1000) return '${(number / 1000).toStringAsFixed(1)}K';
+  return number.toString();
+}
+
+String languageDisplayName(String code) {
+  switch (code) {
+    case 'python': return 'Python 3.9 أو إصدار أحدث';
+    case 'javascript': return 'JavaScript ES6+';
+    case 'typescript': return 'TypeScript';
+    case 'dart': return 'Dart';
+    case 'java': return 'Java 11+';
+    case 'cpp': return 'C++17';
+    case 'go': return 'Go';
+    case 'rust': return 'Rust';
+    default: return code;
   }
 }

@@ -52,7 +52,9 @@ class LessonDetailModel {
               ?.map((e) => AttachmentModel.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
-      pathContext: LessonPathContext.fromJson(json['pathContext'] as Map<String, dynamic>),
+      pathContext: json['pathContext'] != null
+          ? LessonPathContext.fromJson(json['pathContext'] as Map<String, dynamic>)
+          : LessonPathContext.empty(),
       tests: (json['tests'] as List?)
           ?.map((e) => TestModel.fromJson(e as Map<String, dynamic>))
           .toList(),
@@ -78,6 +80,14 @@ class LessonPathContext {
     required this.moduleId,
     required this.moduleTitle,
   });
+
+  factory LessonPathContext.empty() => LessonPathContext(
+        pathId: '',
+        pathSlug: '',
+        pathTitle: '',
+        moduleId: '',
+        moduleTitle: '',
+      );
 
   factory LessonPathContext.fromJson(Map<String, dynamic> json) {
     return LessonPathContext(

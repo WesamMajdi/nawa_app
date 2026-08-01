@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:nawa_flutter/features/notifications/notifications_screen.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:nawa_flutter/core/blocs/leaderboard/leaderboard_bloc.dart';
+import 'package:nawa_flutter/core/models/leaderboard_model.dart';
 import '../../core/constants/constants.dart';
 import '../../core/widgets/app_bottom_nav.dart';
-
+import 'package:go_router/go_router.dart';
 
 class LeaderboardScreen extends StatefulWidget {
   const LeaderboardScreen({super.key});
@@ -12,29 +14,48 @@ class LeaderboardScreen extends StatefulWidget {
 }
 
 class _LeaderboardScreenState extends State<LeaderboardScreen> {
-  bool _isWeekly = true;
+  String _selectedPeriod = 'weekly';
+
+  @override
+  void initState() {
+    super.initState();
+    context.read<LeaderboardBloc>().add(
+      LeaderboardLoadRequested(period: _selectedPeriod),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
         children: [
-          ListView(
-            padding: const EdgeInsets.only(
-              left: AppSpacing.containerMargin,
-              right: AppSpacing.containerMargin,
-              top: 88,
-              bottom: 120,
-            ),
-            children: [
-              _Header(),
-              const SizedBox(height: AppSpacing.stackMD),
-              _Toggle(isWeekly: _isWeekly, onToggle: _toggle),
-              const SizedBox(height: AppSpacing.stackMD),
-              const _Podium(),
-              const SizedBox(height: AppSpacing.stackMD),
-              const _RankedList(),
-            ],
+          BlocBuilder<LeaderboardBloc, LeaderboardState>(
+            builder: (context, state) {
+              if (state is LeaderboardLoading) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (state is LeaderboardLoaded) {
+                return _buildBody(state);
+              }
+              if (state is LeaderboardError) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(state.message, style: AppTypography.bodyMD),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: () => context.read<LeaderboardBloc>().add(
+                          LeaderboardLoadRequested(period: _selectedPeriod),
+                        ),
+                        child: const Text('إعادة المحاولة'),
+                      ),
+                    ],
+                  ),
+                );
+              }
+              return const SizedBox.shrink();
+            },
           ),
           const _TopBar(),
           const AppBottomNav(currentTab: NavTab.challenges),
@@ -43,10 +64,42 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     );
   }
 
-  void _toggle() {
-    setState(() {
-      _isWeekly = !_isWeekly;
-    });
+  Widget _buildBody(LeaderboardLoaded state) {
+    final entries = state.entries;
+    final podium = entries.where((e) => e.rank <= 3).toList()
+      ..sort((a, b) => a.rank.compareTo(b.rank));
+    final rankedList = entries.where((e) => e.rank > 3).toList()
+      ..sort((a, b) => a.rank.compareTo(b.rank));
+
+    return ListView(
+      padding: const EdgeInsets.only(
+        left: AppSpacing.containerMargin,
+        right: AppSpacing.containerMargin,
+        top: 88,
+        bottom: 120,
+      ),
+      children: [
+        const _Header(),
+        const SizedBox(height: AppSpacing.stackMD),
+        _PeriodSelector(
+          selectedPeriod: _selectedPeriod,
+          onChanged: (period) {
+            setState(() => _selectedPeriod = period);
+            context.read<LeaderboardBloc>().add(
+              LeaderboardLoadRequested(period: period),
+            );
+          },
+        ),
+        if (podium.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.stackMD),
+          _Podium(entries: podium),
+        ],
+        if (rankedList.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.stackMD),
+          _RankedList(entries: rankedList),
+        ],
+      ],
+    );
   }
 }
 
@@ -87,10 +140,7 @@ class _TopBar extends StatelessWidget {
           ),
           const Spacer(),
           GestureDetector(
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const NotificationsScreen()),
-            ),
+            onTap: () => context.push('/notifications'),
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
@@ -143,83 +193,49 @@ class _Header extends StatelessWidget {
   }
 }
 
-class _Toggle extends StatelessWidget {
-  final bool isWeekly;
-  final VoidCallback onToggle;
+class _PeriodSelector extends StatelessWidget {
+  final String selectedPeriod;
+  final ValueChanged<String> onChanged;
 
-  const _Toggle({required this.isWeekly, required this.onToggle});
+  const _PeriodSelector({required this.selectedPeriod, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
+    final periods = <String, String>{
+      'weekly': 'أسبوعي',
+      'monthly': 'شهري',
+      'all_time': 'الكل',
+    };
     return Center(
       child: Container(
-        width: 300,
         padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(AppRadius.full),
           color: AppColors.surfaceContainerHigh.withAlpha(153),
           border: Border.all(color: AppColors.onSurfaceVariant.withAlpha(25)),
         ),
-        child: Stack(
-          children: [
-            AnimatedPositioned(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOutCubic,
-              top: 4,
-              right: isWeekly ? 4 : null,
-              left: isWeekly ? null : 4,
-              width: 144,
-              height: 36,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: periods.entries.map((e) {
+            final isSelected = e.key == selectedPeriod;
+            return GestureDetector(
+              onTap: isSelected ? null : () => onChanged(e.key),
               child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(AppRadius.full),
-                  color: AppColors.primaryContainer,
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primaryContainer.withAlpha(77),
-                      blurRadius: 12,
-                    ),
-                  ],
+                  color: isSelected ? AppColors.primaryContainer : Colors.transparent,
+                ),
+                child: Text(
+                  e.value,
+                  style: AppTypography.labelMD.copyWith(
+                    color: isSelected ? AppColors.background : AppColors.onSurfaceVariant,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  ),
                 ),
               ),
-            ),
-            Row(
-              children: [
-                Expanded(
-                  child: GestureDetector(
-                    onTap: isWeekly ? null : onToggle,
-                    child: Container(
-                      height: 44,
-                      alignment: Alignment.center,
-                      child: Text(
-                        'أسبوعي',
-                        style: AppTypography.labelMD.copyWith(
-                          color: isWeekly ? AppColors.background : AppColors.onSurfaceVariant,
-                          fontWeight: isWeekly ? FontWeight.bold : FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: GestureDetector(
-                    onTap: isWeekly ? onToggle : null,
-                    child: Container(
-                      height: 44,
-                      alignment: Alignment.center,
-                      child: Text(
-                        'شهري',
-                        style: AppTypography.labelMD.copyWith(
-                          color: !isWeekly ? AppColors.background : AppColors.onSurfaceVariant,
-                          fontWeight: !isWeekly ? FontWeight.bold : FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
+            );
+          }).toList(),
         ),
       ),
     );
@@ -227,41 +243,53 @@ class _Toggle extends StatelessWidget {
 }
 
 class _Podium extends StatelessWidget {
-  const _Podium();
+  final List<LeaderboardModel> entries;
+
+  const _Podium({required this.entries});
+
+  /// Returns widgets in order: 2nd place, 1st place, 3rd place
+  List<Widget> _buildPodiumCards(BuildContext context) {
+    final items = <Widget>[];
+
+    // 2nd place (left visually)
+    if (entries.length >= 2) {
+      items.add(_PodiumCard(entry: entries[1], isFirst: false));
+    } else {
+      items.add(const SizedBox(width: 100));
+    }
+
+    items.add(const SizedBox(width: AppSpacing.gutter));
+
+    // 1st place (center)
+    if (entries.isNotEmpty) {
+      items.add(_PodiumCard(entry: entries[0], isFirst: true));
+    } else {
+      items.add(const SizedBox(width: 120));
+    }
+
+    items.add(const SizedBox(width: AppSpacing.gutter));
+
+    // 3rd place (right visually)
+    if (entries.length >= 3) {
+      items.add(_PodiumCard(entry: entries[2], isFirst: false));
+    } else {
+      items.add(const SizedBox(width: 100));
+    }
+
+    return items;
+  }
 
   @override
   Widget build(BuildContext context) {
-    return const SizedBox(
+    return SizedBox(
       height: 256,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          SizedBox(width: 8),
-          _PodiumCard(
-            place: '2',
-            avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAjRLCdGo1EMTjXSWWlWFu3ypKQ_1cL2RpDp-P3S1HgEzQxD_jSEjhs7UA-Gi-F8KHmULNgGURMmF6ksgyzgJZ-vNKIutuXw9vjR-PDAj4scP1uaL1yzw6y27wXT8Wn04Uylvrt8OG1Gtq0UJtelQJA12JVd63uGO584P1495j0fvlm3uLCr9CHEyuMDaadvV0BBvtDF4Tly5b__5uGCiQECIuse4cxmeiNp-ziSSbOLUEUTsBkwfIA8cHXYG14lpufK2U8RIc-oA',
-            name: 'أحمد',
-            xp: '8,420 XP',
-            isFirst: false,
-          ),
-          SizedBox(width: AppSpacing.gutter),
-          _PodiumCard(
-            place: '1',
-            avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDirkz4tBTou3oKNhGDrJfyBSQFwuw3kG3VspNBENzvAvoA0iZmKSkG_ZvP5mdHUINr-xUbTTj5yWboTiMu4ZIdcsnwguPnXJAOBYUsKa0EhCPKTCtDyNxx8pNY8iYE7CCUPlOmh_J7x8B-juuWLACK6ss-kXyu2XlCeIqamlGF2ut6IvU_IgjEH7N3___YckysRbsT-md8MnFHsKHC2-LoDdhHs_PMQQM9iJ8e2KEw5Wo2vuo-iKXbcF5x3JoC4_icFZnaftrQaA',
-            name: 'سارة',
-            xp: '12,500 XP',
-            isFirst: true,
-          ),
-          SizedBox(width: AppSpacing.gutter),
-          _PodiumCard(
-            place: '3',
-            avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuC9le6DWdM9D5oP5XknB91fKEAQ_UmZrFywvp5U14eadAWdcsqf9uftKX-eKMAj6dveNKn_axR_6IGvzeezuVWM-TafrPnONzvcLvOcONx2H5EIi0n0iZ0zbAeZg2zdCUdXpwJq2EITBJKBI4WKgh5q4A_57gxOIhgktTWxFfmifdU8ZEWjkEIM1nb59q_3zgUK-lNGtxOvBpMRDiVNSUpPb-iOAGluIVYCbev6sknttUE3VrdwXhP_uuzCSALRAx1SZJXiikczFw',
-            name: 'عمر',
-            xp: '7,100 XP',
-            isFirst: false,
-          ),
-          SizedBox(width: 8),
+          const SizedBox(width: 8),
+          ..._buildPodiumCards(context),
+          const SizedBox(width: 8),
         ],
       ),
     );
@@ -269,19 +297,10 @@ class _Podium extends StatelessWidget {
 }
 
 class _PodiumCard extends StatelessWidget {
-  final String place;
-  final String avatarUrl;
-  final String name;
-  final String xp;
+  final LeaderboardModel entry;
   final bool isFirst;
 
-  const _PodiumCard({
-    required this.place,
-    required this.avatarUrl,
-    required this.name,
-    required this.xp,
-    required this.isFirst,
-  });
+  const _PodiumCard({required this.entry, this.isFirst = false});
 
   @override
   Widget build(BuildContext context) {
@@ -311,7 +330,18 @@ class _PodiumCard extends StatelessWidget {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(AppRadius.full),
-                  child: Image.network(avatarUrl, fit: BoxFit.cover),
+                  child: entry.avatarUrl != null
+                      ? Image.network(entry.avatarUrl!, fit: BoxFit.cover)
+                      : Container(
+                          color: AppColors.surfaceVariant,
+                          alignment: Alignment.center,
+                          child: Text(
+                            entry.initials ?? entry.name.substring(0, 1),
+                            style: AppTypography.headlineMD.copyWith(
+                              color: AppColors.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
                 ),
               ),
               Positioned(
@@ -327,7 +357,7 @@ class _PodiumCard extends StatelessWidget {
                   ),
                   alignment: Alignment.center,
                   child: Text(
-                    place,
+                    '${entry.rank}',
                     style: TextStyle(
                       fontFamily: AppTypography.fontMono,
                       fontSize: isFirst ? 14 : 12,
@@ -341,14 +371,14 @@ class _PodiumCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            name,
+            entry.name,
             style: AppTypography.bodyMD.copyWith(
               overflow: TextOverflow.ellipsis,
             ),
           ),
           const SizedBox(height: 4),
           Text(
-            xp,
+            '${entry.xp} XP',
             style: AppTypography.labelMD.copyWith(
               color: AppColors.primary,
               fontSize: 14,
@@ -357,35 +387,35 @@ class _PodiumCard extends StatelessWidget {
           const SizedBox(height: 16),
           Expanded(
             child: Container(
-            width: double.infinity,
-            decoration: BoxDecoration(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
-              color: isFirst
-                  ? AppColors.primary.withAlpha(51)
-                  : AppColors.surfaceVariant,
-              gradient: isFirst
-                  ? LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        AppColors.primary.withAlpha(77),
-                        Colors.transparent,
-                      ],
-                    )
-                  : null,
-              border: isFirst
-                  ? const Border(top: BorderSide(color: AppColors.primary, width: 1))
-                  : null,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+                color: isFirst
+                    ? AppColors.primary.withAlpha(51)
+                    : AppColors.surfaceVariant,
+                gradient: isFirst
+                    ? LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          AppColors.primary.withAlpha(77),
+                          Colors.transparent,
+                        ],
+                      )
+                    : null,
+                border: isFirst
+                    ? const Border(top: BorderSide(color: AppColors.primary, width: 1))
+                    : null,
+              ),
+              alignment: Alignment.center,
+              child: Icon(
+                Icons.emoji_events,
+                size: isFirst ? 48 : 36,
+                color: isFirst
+                    ? AppColors.primary.withAlpha(204)
+                    : AppColors.onSurfaceVariant.withAlpha(77),
+              ),
             ),
-            alignment: Alignment.center,
-            child: Icon(
-              Icons.emoji_events,
-              size: isFirst ? 48 : 36,
-              color: isFirst
-                  ? AppColors.primary.withAlpha(204)
-                  : AppColors.onSurfaceVariant.withAlpha(77),
-            ),
-          ),
           ),
         ],
       ),
@@ -394,72 +424,66 @@ class _PodiumCard extends StatelessWidget {
 }
 
 class _RankedList extends StatelessWidget {
-  const _RankedList();
+  final List<LeaderboardModel> entries;
+
+  const _RankedList({required this.entries});
 
   @override
   Widget build(BuildContext context) {
-    return const Column(
+    return Column(
       children: [
-        _RankCard(
-          rank: '4',
-          avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuASI_MkK4HjIcU5X3_WmoXdzf7CIZ29TnUOyvvm45YBP0QqlXhlKeiK4heF6QZUgRKEp5EH5RQYKP0rRx-TFhiZuFYemQaPtmkGKHbx754KB1czmrp05YfXIkHlRrf7tIjvmC_uq581bBhj2OHOUNImkOH_YDViBpLWRPqcgtTamxSBM2Jb148Do6jKhlXWd94V7V2kZnOClhPH2QXP6ZZMvlq3P0XN2L82OHHjFH3JnfB9xSxMorRk2FZCkGiIs-2xAX1J__pVvA',
-          name: 'ليلى',
-          xp: '6,250',
-          isCurrentUser: false,
-        ),
-        SizedBox(height: AppSpacing.stackSM),
-        _RankCard(
-          rank: '5',
-          avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB-Dqvcek8DA6T12H6jApOtXsHHWiBB6tdRdiKz1sURhTKX4bga_ANgMY3fN3kViRHa-xBkzm2v5kcLl4RXIE9l3LWLW4OEaIdRBqVIngR1bGTkCZAiR7sbZu1Mz3gyurLF3f8uX99HVTQc6aaHQ8obIVyWOXJ0SiYDek-BXXOZgPKAW1vZxq8PVtZFd63kPYOh-TdfNlxcqh8_mNu_m3lDnWk3L0MA5rEMHb4KEOtxXZtP0Xfzgzdh_Hc0W_kjmtK8-VMBWRn4lg',
-          name: 'أنت',
-          xp: '5,800',
-          isCurrentUser: true,
-        ),
-        SizedBox(height: AppSpacing.stackSM),
-        _RankCard(
-          rank: '6',
-          avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBOIlgvsTNg7fhBtLe9y9N0We8Xeg7EdeutRuHQ0qVp6MSWQjhM9R28afk8scKT4ylE8e-_F2HRZnH4N0cAVvOhVIJjLaSNnYJVZPVm-fFJnCUu0cqIii-sXSJk70oSlgRSFrv9qQWVmkg_VyOkJ6d9fQGT1MOZUIhawFPUwNnvPS1cK2AynID_HwH0lrDSe3UQSR17USxalh52rZqdNG4IrWoaEBrN3ZYrjKmL6_zbX99D8kKLKnTJRMW8x2RX4JGjdBijkgGdmQ',
-          name: 'نورة',
-          xp: '5,120',
-          isCurrentUser: false,
-        ),
-        SizedBox(height: AppSpacing.stackSM),
-        _RankCard(
-          rank: '7',
-          avatarUrl: null,
-          name: 'محمد',
-          xp: '4,900',
-          isCurrentUser: false,
-        ),
+        for (int i = 0; i < entries.length; i++) ...[
+          _RankCard(entry: entries[i]),
+          if (i < entries.length - 1) const SizedBox(height: AppSpacing.stackSM),
+        ],
       ],
     );
   }
 }
 
 class _RankCard extends StatelessWidget {
-  final String rank;
-  final String? avatarUrl;
-  final String name;
-  final String xp;
-  final bool isCurrentUser;
+  final LeaderboardModel entry;
 
-  const _RankCard({
-    required this.rank,
-    this.avatarUrl,
-    required this.name,
-    required this.xp,
-    required this.isCurrentUser,
-  });
+  const _RankCard({required this.entry});
+
+  IconData _trendIcon(String? trend) {
+    switch (trend) {
+      case 'up':
+        return Icons.trending_up;
+      case 'down':
+        return Icons.trending_down;
+      case 'flat':
+        return Icons.trending_flat;
+      default:
+        return Icons.remove;
+    }
+  }
+
+  Color _trendColor(String? trend) {
+    switch (trend) {
+      case 'up':
+        return Colors.green;
+      case 'down':
+        return Colors.red;
+      default:
+        return AppColors.onSurfaceVariant;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final isCurrentUser = entry.isCurrentUser;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppRadius.xl),
-        color: isCurrentUser ? AppColors.primary.withAlpha(12) : AppColors.surfaceContainerHigh.withAlpha(153),
+        color: isCurrentUser
+            ? AppColors.primary.withAlpha(12)
+            : AppColors.surfaceContainerHigh.withAlpha(153),
         border: Border.all(
-          color: isCurrentUser ? AppColors.primary.withAlpha(128) : AppColors.onSurfaceVariant.withAlpha(25),
+          color: isCurrentUser
+              ? AppColors.primary.withAlpha(128)
+              : AppColors.onSurfaceVariant.withAlpha(25),
         ),
         boxShadow: isCurrentUser
             ? [BoxShadow(color: AppColors.primaryContainer.withAlpha(38), blurRadius: 20)]
@@ -468,7 +492,7 @@ class _RankCard extends StatelessWidget {
       child: Row(
         children: [
           Text(
-            rank,
+            '${entry.rank}',
             style: AppTypography.headlineMD.copyWith(
               color: isCurrentUser ? AppColors.primary : AppColors.onSurfaceVariant,
             ),
@@ -480,28 +504,46 @@ class _RankCard extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(
-                color: isCurrentUser ? AppColors.primary : AppColors.onSurfaceVariant.withAlpha(51),
+                color: isCurrentUser
+                    ? AppColors.primary
+                    : AppColors.onSurfaceVariant.withAlpha(51),
                 width: isCurrentUser ? 2 : 1,
               ),
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(AppRadius.full),
-              child: avatarUrl != null
-                  ? Image.network(avatarUrl!, fit: BoxFit.cover)
-                  : const Icon(Icons.person, color: AppColors.onSurfaceVariant, size: 24),
+              child: entry.avatarUrl != null
+                  ? Image.network(entry.avatarUrl!, fit: BoxFit.cover)
+                  : Container(
+                      color: AppColors.surfaceVariant,
+                      alignment: Alignment.center,
+                      child: Text(
+                        entry.initials ?? entry.name.substring(0, 1),
+                        style: AppTypography.labelMD.copyWith(
+                          color: AppColors.onSurfaceVariant,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
             ),
           ),
           const SizedBox(width: AppSpacing.stackMD),
           Expanded(
             child: Text(
-              name,
+              entry.name,
               style: AppTypography.bodyLG.copyWith(
                 fontWeight: isCurrentUser ? FontWeight.bold : FontWeight.normal,
               ),
             ),
           ),
+          Icon(
+            _trendIcon(entry.trend),
+            size: 20,
+            color: _trendColor(entry.trend),
+          ),
+          const SizedBox(width: 8),
           Text(
-            xp,
+            '${entry.xp}',
             style: AppTypography.labelMD.copyWith(
               color: isCurrentUser ? AppColors.primary : AppColors.onSurfaceVariant,
               fontWeight: isCurrentUser ? FontWeight.bold : FontWeight.normal,
@@ -519,5 +561,3 @@ class _RankCard extends StatelessWidget {
     );
   }
 }
-
-

@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../../models/lesson_model.dart';
 import '../../repositories/lesson_repository.dart';
+import '../../network/api_exceptions.dart';
 
 // Events
 sealed class LessonEvent extends Equatable {
@@ -90,20 +91,34 @@ class LessonBloc extends Bloc<LessonEvent, LessonState> {
       final lesson = await _repository.getLesson(event.id);
       emit(LessonLoaded(lesson));
     } catch (e) {
-      emit(LessonError(e.toString()));
+      String message;
+      if (e is ApiException) {
+        message = e.toUserMessage();
+      } else {
+        message = 'حدث خطأ غير متوقع';
+      }
+      emit(LessonError(message));
     }
   }
 
   Future<void> _onComplete(LessonCompleteRequested event, Emitter<LessonState> emit) async {
+    emit(LessonLoading());
     try {
       final result = await _repository.completeLesson(event.id);
       emit(LessonCompleted(result));
     } catch (e) {
-      emit(LessonError(e.toString()));
+      String message;
+      if (e is ApiException) {
+        message = e.toUserMessage();
+      } else {
+        message = 'حدث خطأ غير متوقع';
+      }
+      emit(LessonError(message));
     }
   }
 
   Future<void> _onSubmitCode(LessonSubmitCodeRequested event, Emitter<LessonState> emit) async {
+    emit(LessonLoading());
     try {
       final result = await _repository.submitCode(
         id: event.id,
@@ -112,11 +127,18 @@ class LessonBloc extends Bloc<LessonEvent, LessonState> {
       );
       emit(LessonCompleted(result));
     } catch (e) {
-      emit(LessonError(e.toString()));
+      String message;
+      if (e is ApiException) {
+        message = e.toUserMessage();
+      } else {
+        message = 'حدث خطأ غير متوقع';
+      }
+      emit(LessonError(message));
     }
   }
 
   Future<void> _onSubmitQuiz(LessonSubmitQuizRequested event, Emitter<LessonState> emit) async {
+    emit(LessonLoading());
     try {
       final result = await _repository.submitQuiz(
         id: event.id,
@@ -124,7 +146,13 @@ class LessonBloc extends Bloc<LessonEvent, LessonState> {
       );
       emit(LessonCompleted(result));
     } catch (e) {
-      emit(LessonError(e.toString()));
+      String message;
+      if (e is ApiException) {
+        message = e.toUserMessage();
+      } else {
+        message = 'حدث خطأ غير متوقع';
+      }
+      emit(LessonError(message));
     }
   }
 }

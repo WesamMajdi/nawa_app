@@ -13,6 +13,7 @@ class ChallengeModel {
   final String? languageCode;
   final String? imageUrl;
   final String? color;
+  final String? sponsorName;
   final bool joinedOrSolved;
 
   ChallengeModel({
@@ -30,6 +31,7 @@ class ChallengeModel {
     this.languageCode,
     this.imageUrl,
     this.color,
+    this.sponsorName,
     this.joinedOrSolved = false,
   });
 
@@ -49,6 +51,7 @@ class ChallengeModel {
       languageCode: json['languageCode'] as String?,
       imageUrl: json['imageUrl'] as String?,
       color: json['color'] as String?,
+      sponsorName: json['sponsorName'] as String?,
       joinedOrSolved: json['joinedOrSolved'] as bool? ?? false,
     );
   }

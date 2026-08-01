@@ -1,31 +1,396 @@
 import 'package:flutter/material.dart';
-import 'package:nawa_flutter/core/constants/constants.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import '../../core/blocs/certificate/certificate_bloc.dart';
+import '../../core/constants/constants.dart';
+import '../../core/models/plan_model.dart';
 
-class CertificatesStoreScreen extends StatelessWidget {
+class CertificatesStoreScreen extends StatefulWidget {
   const CertificatesStoreScreen({super.key});
+
+  @override
+  State<CertificatesStoreScreen> createState() =>
+      _CertificatesStoreScreenState();
+}
+
+class _CertificatesStoreScreenState extends State<CertificatesStoreScreen> {
+  @override
+  void initState() {
+    super.initState();
+    context
+        .read<CertificateBloc>()
+        .add(CertificateLoadRequested());
+  }
+
+  String _formatDate(DateTime? date) {
+    if (date == null) return '';
+    return 'تم الإنجاز: ${date.day} ${_monthName(date.month)} ${date.year}';
+  }
+
+  String _monthName(int month) {
+    const months = [
+      'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
+      'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
+    ];
+    return months[month - 1];
+  }
+
+  IconData _iconForCertificate(String title, String? pathTitle) {
+    final text = (title + (pathTitle ?? '')).toLowerCase();
+    if (text.contains('هندسة') || text.contains('software')) {
+      return Icons.military_tech;
+    }
+    if (text.contains('بيانات') || text.contains('data')) {
+      return Icons.code;
+    }
+    if (text.contains('شبكات') || text.contains('network')) {
+      return Icons.lan;
+    }
+    if (text.contains('أمن') || text.contains('security')) {
+      return Icons.security;
+    }
+    if (text.contains('ذكاء') || text.contains('ai') || text.contains('ml')) {
+      return Icons.psychology;
+    }
+    if (text.contains('تطبيقات') || text.contains('mobile')) {
+      return Icons.phone_android;
+    }
+    if (text.contains('ويب') || text.contains('web')) {
+      return Icons.web;
+    }
+    return Icons.workspace_premium;
+  }
+
+  Color _colorFromString(String? colorHex) {
+    if (colorHex == null) return AppColors.primary;
+    final c = colorHex.replaceFirst('#', '');
+    if (c.length == 6) {
+      return Color(int.parse('FF$c', radix: 16));
+    }
+    return AppColors.primary;
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
         children: [
-          ListView(
-            padding: const EdgeInsets.only(
-              left: AppSpacing.containerMargin,
-              right: AppSpacing.containerMargin,
-              top: 72,
-              bottom: 100,
-            ),
-            children: [
-              const _Header(),
-              const SizedBox(height: 48),
-              const _CertificatesSection(),
-              const SizedBox(height: 48),
-              const _SubscriptionSection(),
-              const SizedBox(height: 24),
-            ],
+          BlocBuilder<CertificateBloc, CertificateState>(
+            builder: (context, state) {
+              if (state is CertificateLoading) {
+                return _buildLoading();
+              }
+              if (state is CertificateError) {
+                return _buildError(state.message);
+              }
+              if (state is CertificateSubscriptionSuccess) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  _showSuccessDialog(context);
+                  context
+                      .read<CertificateBloc>()
+                      .add(CertificateLoadRequested());
+                });
+              }
+              if (state is CertificateLoaded) {
+                return _buildContent(state.certificates, state.plans);
+              }
+              return const SizedBox.shrink();
+            },
           ),
           _TopBar(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContent(
+      List<CertificateModel> certificates, List<PlanModel> plans) {
+    final sortedCerts = List<CertificateModel>.from(certificates)
+      ..sort((a, b) {
+        if (a.issuedAt == null && b.issuedAt == null) return 0;
+        if (a.issuedAt == null) return 1;
+        if (b.issuedAt == null) return -1;
+        return b.issuedAt!.compareTo(a.issuedAt!);
+      });
+
+    return ListView(
+      padding: const EdgeInsets.only(
+        left: AppSpacing.containerMargin,
+        right: AppSpacing.containerMargin,
+        top: 72,
+        bottom: 100,
+      ),
+      children: [
+        const _Header(),
+        const SizedBox(height: 48),
+        if (sortedCerts.isNotEmpty) ...[
+          Row(
+            children: [
+              const Icon(Icons.workspace_premium, color: AppColors.primary),
+              const SizedBox(width: AppSpacing.stackSM),
+              Text('شهاداتك الرقمية', style: AppTypography.headlineMD),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.stackMD),
+          for (final cert in sortedCerts) ...[
+            _CertificateCard(
+              icon: _iconForCertificate(cert.title, cert.pathTitle),
+              iconColor: _colorFromString(cert.color),
+              iconBorderColor: _colorFromString(cert.color).withAlpha(77),
+              badge: cert.grade ?? 'مكتمل',
+              badgeBg: cert.grade != null
+                  ? const Color(0x1AFFD700)
+                  : AppColors.surfaceVariant,
+              badgeBorder: cert.grade != null
+                  ? const Color(0x33FFD700)
+                  : const Color(0x1ABBCAC0),
+              badgeText: cert.grade != null
+                  ? const Color(0xFFFFD700)
+                  : AppColors.onSurfaceVariant,
+              title: cert.title,
+              date: _formatDate(cert.issuedAt),
+              glowColor: _colorFromString(cert.color).withAlpha(26),
+              onShare: () {
+                if (cert.pdfUrl != null) {
+                  context.go(cert.pdfUrl!);
+                }
+              },
+            ),
+            const SizedBox(height: AppSpacing.gutter),
+          ],
+        ],
+        if (plans.isNotEmpty) ...[
+          const SizedBox(height: 48),
+          Row(
+            children: [
+              const Icon(Icons.storefront, color: AppColors.primary),
+              const SizedBox(width: AppSpacing.stackSM),
+              Text('باقات الاشتراك', style: AppTypography.headlineMD),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.stackMD),
+          for (final plan in plans) ...[
+            _PlanCard(plan: plan),
+            const SizedBox(height: AppSpacing.stackLG),
+          ],
+        ],
+      ],
+    );
+  }
+
+  Widget _buildLoading() {
+    return ListView(
+      padding: const EdgeInsets.only(
+        left: AppSpacing.containerMargin,
+        right: AppSpacing.containerMargin,
+        top: 72,
+        bottom: 100,
+      ),
+      children: [
+        const _Header(),
+        const SizedBox(height: 48),
+        Row(
+          children: [
+            const Icon(Icons.workspace_premium, color: AppColors.primary),
+            const SizedBox(width: AppSpacing.stackSM),
+            Text('شهاداتك الرقمية', style: AppTypography.headlineMD),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.stackMD),
+        for (int i = 0; i < 2; i++) _ShimmerCard(),
+        const SizedBox(height: 48),
+        Row(
+          children: [
+            const Icon(Icons.storefront, color: AppColors.primary),
+            const SizedBox(width: AppSpacing.stackSM),
+            Text('باقات الاشتراك', style: AppTypography.headlineMD),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.stackMD),
+        for (int i = 0; i < 2; i++) _ShimmerPlanCard(),
+      ],
+    );
+  }
+
+  Widget _buildError(String message) {
+    return ListView(
+      padding: const EdgeInsets.only(
+        left: AppSpacing.containerMargin,
+        right: AppSpacing.containerMargin,
+        top: 72,
+        bottom: 100,
+      ),
+      children: [
+        const _Header(),
+        const SizedBox(height: 48),
+        Center(
+          child: Column(
+            children: [
+              const Icon(Icons.error_outline,
+                  size: 48, color: AppColors.error),
+              const SizedBox(height: 16),
+              Text(
+                message,
+                style: AppTypography.bodyMD.copyWith(
+                  color: AppColors.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () {
+                  context
+                      .read<CertificateBloc>()
+                      .add(CertificateLoadRequested());
+                },
+                child: const Text('إعادة المحاولة'),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showSuccessDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surfaceContainerHigh,
+        title: Text(
+          'تم بنجاح',
+          style: AppTypography.headlineMD.copyWith(color: AppColors.primary),
+        ),
+        content: Text(
+          'تم الاشتراك بنجاح!',
+          style: AppTypography.bodyMD.copyWith(color: AppColors.onSurface),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              'حسناً',
+              style: AppTypography.bodyMD.copyWith(
+                  color: AppColors.onSurfaceVariant),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ShimmerCard extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        color: AppColors.surfaceContainerHigh.withAlpha(76),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.surfaceVariant.withAlpha(76),
+                ),
+              ),
+              const Spacer(),
+              Container(
+                width: 60,
+                height: 24,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  color: AppColors.surfaceVariant.withAlpha(76),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.stackMD),
+          Container(
+            width: 180,
+            height: 16,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(4),
+              color: AppColors.surfaceVariant.withAlpha(76),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            width: 120,
+            height: 12,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(4),
+              color: AppColors.surfaceVariant.withAlpha(51),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ShimmerPlanCard extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(32),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        color: AppColors.surfaceContainerHigh.withAlpha(76),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 140,
+            height: 20,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(4),
+              color: AppColors.surfaceVariant.withAlpha(76),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.stackSM),
+          Container(
+            width: 100,
+            height: 36,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(4),
+              color: AppColors.surfaceVariant.withAlpha(76),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.stackMD),
+          for (int i = 0; i < 3; i++) ...[
+            Row(
+              children: [
+                Container(
+                  width: 20,
+                  height: 20,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppColors.surfaceVariant.withAlpha(76),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.gutter),
+                Container(
+                  width: 160,
+                  height: 14,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(4),
+                    color: AppColors.surfaceVariant.withAlpha(76),
+                  ),
+                ),
+              ],
+            ),
+            if (i < 2) const SizedBox(height: AppSpacing.gutter),
+          ],
         ],
       ),
     );
@@ -47,7 +412,8 @@ class _Header extends StatelessWidget {
         const SizedBox(height: AppSpacing.stackSM),
         Text(
           'استعرض إنجازاتك وارتقِ بحسابك إلى المستوى التالي.',
-          style: AppTypography.bodyMD.copyWith(color: AppColors.onSurfaceVariant),
+          style:
+              AppTypography.bodyMD.copyWith(color: AppColors.onSurfaceVariant),
         ),
       ],
     );
@@ -100,52 +466,6 @@ class _TopBar extends StatelessWidget {
   }
 }
 
-class _CertificatesSection extends StatelessWidget {
-  const _CertificatesSection();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Icon(Icons.workspace_premium, color: AppColors.primary),
-            const SizedBox(width: AppSpacing.stackSM),
-            Text('شهاداتك الرقمية', style: AppTypography.headlineMD),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.stackMD),
-        const _CertificateCard(
-          icon: Icons.military_tech,
-          iconColor: Color(0xFFFFD700),
-          iconBorderColor: Color(0x4DFFD700),
-          badge: 'درجة امتياز',
-          badgeBg: Color(0x1AFFD700),
-          badgeBorder: Color(0x33FFD700),
-          badgeText: Color(0xFFFFD700),
-          title: 'هندسة البرمجيات المتقدمة',
-          date: 'تم الإنجاز: ٢٤ أكتوبر ٢٠٢٣',
-          glowColor: Color(0x1AFFD700),
-        ),
-        const SizedBox(height: AppSpacing.gutter),
-        const _CertificateCard(
-          icon: Icons.code,
-          iconColor: AppColors.primary,
-          iconBorderColor: Color(0x4D50DEA9),
-          badge: 'مكتمل',
-          badgeBg: AppColors.surfaceVariant,
-          badgeBorder: Color(0x1ABBCAC0),
-          badgeText: AppColors.onSurfaceVariant,
-          title: 'أساسيات هياكل البيانات',
-          date: 'تم الإنجاز: ١٢ سبتمبر ٢٠٢٣',
-          glowColor: Color(0x1A50DEA9),
-        ),
-      ],
-    );
-  }
-}
-
 class _CertificateCard extends StatelessWidget {
   final IconData icon;
   final Color iconColor;
@@ -157,6 +477,7 @@ class _CertificateCard extends StatelessWidget {
   final String title;
   final String date;
   final Color glowColor;
+  final VoidCallback? onShare;
 
   const _CertificateCard({
     required this.icon,
@@ -169,6 +490,7 @@ class _CertificateCard extends StatelessWidget {
     required this.title,
     required this.date,
     required this.glowColor,
+    this.onShare,
   });
 
   @override
@@ -218,7 +540,8 @@ class _CertificateCard extends StatelessWidget {
                     child: Icon(icon, color: iconColor, size: 32),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(AppRadius.full),
                       color: badgeBg,
@@ -249,11 +572,12 @@ class _CertificateCard extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton(
-                  onPressed: () {},
+                  onPressed: onShare,
                   style: OutlinedButton.styleFrom(
                     backgroundColor: AppColors.surfaceVariant.withAlpha(128),
                     foregroundColor: AppColors.onSurface,
-                    side: BorderSide(color: AppColors.onSurfaceVariant.withAlpha(51)),
+                    side: BorderSide(
+                        color: AppColors.onSurfaceVariant.withAlpha(51)),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(AppRadius.lg),
@@ -264,7 +588,8 @@ class _CertificateCard extends StatelessWidget {
                     children: [
                       Text(
                         'مشاركة',
-                        style: AppTypography.labelMD.copyWith(color: AppColors.onSurface),
+                        style: AppTypography.labelMD
+                            .copyWith(color: AppColors.onSurface),
                       ),
                       const SizedBox(width: AppSpacing.stackSM),
                       const Icon(Icons.share, size: 18),
@@ -280,95 +605,78 @@ class _CertificateCard extends StatelessWidget {
   }
 }
 
-class _SubscriptionSection extends StatelessWidget {
-  const _SubscriptionSection();
+class _PlanCard extends StatelessWidget {
+  final PlanModel plan;
+
+  const _PlanCard({required this.plan});
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
+    final isFree = plan.priceCents == 0;
+
+    if (isFree) {
+      return Container(
+        padding: const EdgeInsets.all(32),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          color: AppColors.surfaceContainerHigh.withAlpha(153),
+          border:
+              Border.all(color: AppColors.onSurfaceVariant.withAlpha(25)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(Icons.storefront, color: AppColors.primary),
-            const SizedBox(width: AppSpacing.stackSM),
-            Text('باقات الاشتراك', style: AppTypography.headlineMD),
+            Text(plan.name, style: AppTypography.headlineLG),
+            const SizedBox(height: AppSpacing.stackSM),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                Text('مجاني', style: AppTypography.headlineXL),
+                const SizedBox(width: 4),
+                Text(
+                  '/ دائماً',
+                  style: AppTypography.bodyMD
+                      .copyWith(color: AppColors.onSurfaceVariant),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.stackMD),
+            for (final feature in plan.features) ...[
+              _FeatureItem(text: feature),
+              const SizedBox(height: AppSpacing.gutter),
+            ],
+            const SizedBox(height: AppSpacing.stackMD),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceVariant,
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+              ),
+              child: Text(
+                'الخطة الحالية',
+                style: AppTypography.labelMD.copyWith(
+                  color: AppColors.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
           ],
         ),
-        const SizedBox(height: AppSpacing.stackMD),
-        const _FreePlanCard(),
-        const SizedBox(height: AppSpacing.stackLG),
-        const _ProPlanCard(),
-      ],
-    );
-  }
-}
+      );
+    }
 
-class _FreePlanCard extends StatelessWidget {
-  const _FreePlanCard();
-
-  @override
-  Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppRadius.xl),
         color: AppColors.surfaceContainerHigh.withAlpha(153),
-        border: Border.all(color: AppColors.onSurfaceVariant.withAlpha(25)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('الباقة الأساسية', style: AppTypography.headlineLG),
-          const SizedBox(height: AppSpacing.stackSM),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Text('مجاني', style: AppTypography.headlineXL),
-              const SizedBox(width: 4),
-              Text('/ دائماً', style: AppTypography.bodyMD.copyWith(color: AppColors.onSurfaceVariant)),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.stackMD),
-          _FeatureItem(text: 'وصول محدود للمسارات التعليمية'),
-          const SizedBox(height: AppSpacing.gutter),
-          _FeatureItem(text: 'مشاركة في التحديات المجتمعية'),
-          const SizedBox(height: AppSpacing.gutter),
-          _FeatureItem(text: 'شهادات إتمام أساسية'),
-          const SizedBox(height: AppSpacing.stackMD),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            decoration: BoxDecoration(
-              color: AppColors.surfaceVariant,
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-            ),
-            child: Text(
-              'الخطة الحالية',
-              style: AppTypography.labelMD.copyWith(
-                color: AppColors.onSurfaceVariant,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ProPlanCard extends StatelessWidget {
-  const _ProPlanCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(32),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        color: AppColors.surfaceContainerHigh.withAlpha(153),
-        border: Border.all(color: AppColors.primary.withAlpha(76)),
+        border: Border.all(
+          color: plan.isPopular
+              ? AppColors.primary.withAlpha(76)
+              : AppColors.onSurfaceVariant.withAlpha(25),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -377,23 +685,29 @@ class _ProPlanCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'الباقة الاحترافية',
-                style: AppTypography.headlineLG.copyWith(color: AppColors.primary),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(AppRadius.full),
-                  color: AppColors.primaryContainer,
+                plan.name,
+                style: AppTypography.headlineLG.copyWith(
+                  color: plan.isPopular
+                      ? AppColors.primary
+                      : AppColors.onSurface,
                 ),
-                child: Text(
-                  'الأكثر شعبية',
-                  style: AppTypography.labelMD.copyWith(
-                    color: AppColors.onPrimaryContainer,
-                    fontSize: 12,
+              ),
+              if (plan.isPopular)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(AppRadius.full),
+                    color: AppColors.primaryContainer,
+                  ),
+                  child: Text(
+                    'الأكثر شعبية',
+                    style: AppTypography.labelMD.copyWith(
+                      color: AppColors.onPrimaryContainer,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
           const SizedBox(height: AppSpacing.stackSM),
@@ -401,38 +715,62 @@ class _ProPlanCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
             children: [
-              Text('٤٩', style: AppTypography.headlineXL),
+              Text(
+                '${(plan.priceCents / 100).toStringAsFixed(0)}',
+                style: AppTypography.headlineXL,
+              ),
               const SizedBox(width: 4),
-              Text('/ شهرياً', style: AppTypography.bodyMD.copyWith(color: AppColors.onSurfaceVariant)),
+              Text(
+                '\$/شهرياً',
+                style: AppTypography.bodyMD
+                    .copyWith(color: AppColors.onSurfaceVariant),
+              ),
             ],
           ),
           const SizedBox(height: AppSpacing.stackMD),
-          _FeatureItem(text: 'وصول كامل لجميع المسارات والمحتوى المتقدم', color: AppColors.primary),
-          const SizedBox(height: AppSpacing.gutter),
-          _FeatureItem(text: 'مراجعة كود من خبراء الصناعة (Code Review)', color: AppColors.primary),
-          const SizedBox(height: AppSpacing.gutter),
-          _FeatureItem(text: 'شهادات معتمدة ومميزة بختم ذهبي', color: AppColors.primary),
-          const SizedBox(height: AppSpacing.gutter),
-          _FeatureItem(text: 'أولوية في الدعم الفني والإرشاد', color: AppColors.primary),
+          for (final feature in plan.features) ...[
+            _FeatureItem(
+              text: feature,
+              color: plan.isPopular ? AppColors.primary : AppColors.onSurfaceVariant,
+            ),
+            const SizedBox(height: AppSpacing.gutter),
+          ],
           const SizedBox(height: AppSpacing.stackMD),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () {},
+              onPressed: () {
+                context.read<CertificateBloc>().add(
+                      CertificateSubscribeRequested(
+                        planCode: plan.code,
+                        billingCycle: 'monthly',
+                      ),
+                    );
+              },
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryContainer,
-                foregroundColor: AppColors.onPrimaryContainer,
+                backgroundColor: plan.isPopular
+                    ? AppColors.primaryContainer
+                    : AppColors.surfaceVariant,
+                foregroundColor: plan.isPopular
+                    ? AppColors.onPrimaryContainer
+                    : AppColors.onSurface,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppRadius.lg),
                 ),
                 elevation: 0,
-                textStyle: AppTypography.headlineMD,
               ).copyWith(
                 shadowColor: WidgetStateProperty.all(Colors.transparent),
                 surfaceTintColor: WidgetStateProperty.all(Colors.transparent),
               ),
-              child: const Text('ترقية الحساب الآن'),
+              child: Text(
+                isFree ? 'الاشتراك' : 'ترقية الحساب الآن',
+                style: AppTypography.headlineMD.copyWith(
+                  color: plan.isPopular
+                      ? AppColors.onPrimaryContainer
+                      : AppColors.onSurface,
+                ),
+              ),
             ),
           ),
         ],
@@ -445,7 +783,8 @@ class _FeatureItem extends StatelessWidget {
   final String text;
   final Color color;
 
-  const _FeatureItem({required this.text, this.color = AppColors.onSurfaceVariant});
+  const _FeatureItem(
+      {required this.text, this.color = AppColors.onSurfaceVariant});
 
   @override
   Widget build(BuildContext context) {

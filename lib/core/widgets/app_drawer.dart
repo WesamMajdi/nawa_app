@@ -1,14 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:nawa_flutter/core/constants/constants.dart';
-import 'package:nawa_flutter/core/helper/extension.dart';
-import 'package:nawa_flutter/features/account_settings/account_settings_screen.dart';
-import 'package:nawa_flutter/features/certificates_store/certificates_store_screen.dart';
-import 'package:nawa_flutter/features/challenges/challenges_screen.dart';
-import 'package:nawa_flutter/features/community/community_screen.dart';
-import 'package:nawa_flutter/features/explore/explore_screen.dart';
-import 'package:nawa_flutter/features/home/dashboard_screen.dart';
-import 'package:nawa_flutter/features/notifications/notifications_screen.dart';
-import 'package:nawa_flutter/features/profile/profile_screen.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -34,7 +26,7 @@ class AppDrawer extends StatelessWidget {
               title: const Text('الرئيسية'),
               onTap: () {
                 Navigator.pop(context);
-                context.pushReplacement(const DashboardScreen());
+                context.go('/dashboard');
               },
             ),
             ListTile(
@@ -42,7 +34,7 @@ class AppDrawer extends StatelessWidget {
               title: const Text('التحديات'),
               onTap: () {
                 Navigator.pop(context);
-                context.pushReplacement(const ChallengesScreen());
+                context.go('/challenges');
               },
             ),
             ListTile(
@@ -50,7 +42,7 @@ class AppDrawer extends StatelessWidget {
               title: const Text('المجتمع'),
               onTap: () {
                 Navigator.pop(context);
-                context.pushReplacement(const CommunityScreen());
+                context.go('/community');
               },
             ),
             ListTile(
@@ -58,7 +50,7 @@ class AppDrawer extends StatelessWidget {
               title: const Text('الاستكشاف'),
               onTap: () {
                 Navigator.pop(context);
-                context.pushReplacement(const ExploreScreen());
+                context.go('/explore');
               },
             ),
             ListTile(
@@ -66,16 +58,24 @@ class AppDrawer extends StatelessWidget {
               title: const Text('الملف الشخصي'),
               onTap: () {
                 Navigator.pop(context);
-                context.pushReplacement(const ProfileScreen());
+                context.go('/profile');
               },
             ),
             const Divider(),
+            ListTile(
+              leading: const Icon(Icons.leaderboard),
+              title: const Text('المتصدرين'),
+              onTap: () {
+                Navigator.pop(context);
+                context.go('/leaderboard');
+              },
+            ),
             ListTile(
               leading: const Icon(Icons.notifications_outlined),
               title: const Text('الإشعارات'),
               onTap: () {
                 Navigator.pop(context);
-                context.push(const NotificationsScreen());
+                context.go('/notifications');
               },
             ),
             ListTile(
@@ -83,7 +83,7 @@ class AppDrawer extends StatelessWidget {
               title: const Text('الشهادات والمتجر'),
               onTap: () {
                 Navigator.pop(context);
-                context.push(const CertificatesStoreScreen());
+                context.go('/certificates-store');
               },
             ),
             const Divider(),
@@ -92,7 +92,7 @@ class AppDrawer extends StatelessWidget {
               title: const Text('الإعدادات'),
               onTap: () {
                 Navigator.pop(context);
-                context.push(const AccountSettingsScreen());
+                context.go('/account-settings');
               },
             ),
           ],

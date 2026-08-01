@@ -3,6 +3,7 @@ import 'package:equatable/equatable.dart';
 import '../../models/dashboard_model.dart';
 import '../../models/user_model.dart';
 import '../../repositories/user_repository.dart';
+import '../../network/api_exceptions.dart';
 
 // Events
 sealed class DashboardEvent extends Equatable {
@@ -47,12 +48,17 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
   Future<void> _onLoad(DashboardLoadRequested event, Emitter<DashboardState> emit) async {
     emit(DashboardLoading());
     try {
-      final meData = await _repository.getMe();
-      final user = UserModel.fromJson(meData['user'] as Map<String, dynamic>);
+      final user = await _repository.getMe();
       final dashboard = await _repository.getDashboard();
       emit(DashboardLoaded(user: user, dashboard: dashboard));
     } catch (e) {
-      emit(DashboardError(e.toString()));
+      String message;
+      if (e is ApiException) {
+        message = e.toUserMessage();
+      } else {
+        message = 'حدث خطأ غير متوقع';
+      }
+      emit(DashboardError(message));
     }
   }
 }

@@ -18,6 +18,8 @@ class UserModel {
   final int streakDays;
   final int globalRank;
   final bool emailVerified;
+  final bool isVerified;
+  final bool verificationRequired;
   final bool isAvailableForHire;
   final DateTime? joinedAt;
 
@@ -41,6 +43,8 @@ class UserModel {
     required this.streakDays,
     required this.globalRank,
     required this.emailVerified,
+    this.isVerified = false,
+    this.verificationRequired = false,
     required this.isAvailableForHire,
     this.joinedAt,
   });
@@ -66,6 +70,8 @@ class UserModel {
       streakDays: json['streakDays'] as int? ?? 0,
       globalRank: json['globalRank'] as int? ?? 0,
       emailVerified: json['emailVerified'] as bool? ?? false,
+      isVerified: json['isVerified'] as bool? ?? false,
+      verificationRequired: json['verificationRequired'] as bool? ?? false,
       isAvailableForHire: json['isAvailableForHire'] as bool? ?? false,
       joinedAt: json['joinedAt'] != null ? DateTime.parse(json['joinedAt']) : null,
     );

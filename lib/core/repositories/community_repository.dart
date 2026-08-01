@@ -1,3 +1,5 @@
+import 'package:dio/dio.dart';
+
 import '../models/post_model.dart';
 import '../network/api_client.dart';
 import '../network/api_endpoints.dart';
@@ -60,12 +62,20 @@ class CommunityRepository {
   }
 
   Future<String> uploadImage(String filePath) async {
-    // TODO: Implement multipart upload
-    final response = await _api.post(ApiEndpoints.communityMediaImages);
+    final formData = FormData.fromMap({
+      'file': await MultipartFile.fromFile(filePath),
+    });
+    final response = await _api.dio.post(
+      ApiEndpoints.communityMediaImages,
+      data: formData,
+    );
     return response.data['url'] as String;
   }
 
-  Future<List<ReplyModel>> getReplies(String postId, {String? cursor}) async {
+  Future<PaginatedResponse<ReplyModel>> getReplies({
+    required String postId,
+    String? cursor,
+  }) async {
     final params = <String, dynamic>{};
     if (cursor != null) params['cursor'] = cursor;
 
@@ -73,7 +83,12 @@ class CommunityRepository {
       '${ApiEndpoints.communityPosts}/$postId/replies',
       queryParameters: params,
     );
-    return (response.data as List).map((e) => ReplyModel.fromJson(e)).toList();
+    final data = response.data as Map<String, dynamic>;
+    final items = (data['items'] as List)
+        .map((e) => ReplyModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+    final pageInfo = PageInfo.fromJson(data['pageInfo'] as Map<String, dynamic>);
+    return PaginatedResponse(items: items, pageInfo: pageInfo);
   }
 
   Future<ReplyModel> createReply({

@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../../models/plan_model.dart';
 import '../../repositories/certificate_repository.dart';
+import '../../network/api_exceptions.dart';
 
 // Events
 sealed class CertificateEvent extends Equatable {
@@ -39,6 +40,7 @@ class CertificateLoaded extends CertificateState {
   @override
   List<Object?> get props => [certificates, plans];
 }
+class CertificateSubscriptionSuccess extends CertificateState {}
 class CertificateError extends CertificateState {
   final String message;
   const CertificateError(this.message);
@@ -63,11 +65,18 @@ class CertificateBloc extends Bloc<CertificateEvent, CertificateState> {
       final plans = await _repository.getPlans();
       emit(CertificateLoaded(certificates: certificates, plans: plans));
     } catch (e) {
-      emit(CertificateError(e.toString()));
+      String message;
+      if (e is ApiException) {
+        message = e.toUserMessage();
+      } else {
+        message = 'حدث خطأ غير متوقع';
+      }
+      emit(CertificateError(message));
     }
   }
 
   Future<void> _onLoadPlans(CertificateLoadPlans event, Emitter<CertificateState> emit) async {
+    emit(CertificateLoading());
     try {
       final plans = await _repository.getPlans();
       final current = state;
@@ -75,18 +84,32 @@ class CertificateBloc extends Bloc<CertificateEvent, CertificateState> {
         emit(CertificateLoaded(certificates: current.certificates, plans: plans));
       }
     } catch (e) {
-      emit(CertificateError(e.toString()));
+      String message;
+      if (e is ApiException) {
+        message = e.toUserMessage();
+      } else {
+        message = 'حدث خطأ غير متوقع';
+      }
+      emit(CertificateError(message));
     }
   }
 
   Future<void> _onSubscribe(CertificateSubscribeRequested event, Emitter<CertificateState> emit) async {
+    emit(CertificateLoading());
     try {
       await _repository.subscribe(
         planCode: event.planCode,
         billingCycle: event.billingCycle,
       );
+      emit(CertificateSubscriptionSuccess());
     } catch (e) {
-      emit(CertificateError(e.toString()));
+      String message;
+      if (e is ApiException) {
+        message = e.toUserMessage();
+      } else {
+        message = 'حدث خطأ غير متوقع';
+      }
+      emit(CertificateError(message));
     }
   }
 }

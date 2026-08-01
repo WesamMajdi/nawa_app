@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../config/env_config.dart';
 import 'api_endpoints.dart';
 import 'api_exceptions.dart';
 import 'auth_interceptor.dart';
@@ -8,14 +9,12 @@ class ApiClient {
   late final Dio _dio;
   final FlutterSecureStorage _storage;
 
-  static const String _baseUrl = 'https://nawahtareq-001-site1.jtempurl.com/api/v1';
-
   ApiClient({FlutterSecureStorage? storage})
       : _storage = storage ?? const FlutterSecureStorage() {
     _dio = Dio(BaseOptions(
-      baseUrl: _baseUrl,
-      connectTimeout: const Duration(seconds: 15),
-      receiveTimeout: const Duration(seconds: 15),
+      baseUrl: EnvConfig.apiBaseUrl,
+      connectTimeout: EnvConfig.connectTimeout,
+      receiveTimeout: EnvConfig.receiveTimeout,
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
@@ -88,6 +87,8 @@ class ApiClient {
 
   Future<String?> getAccessToken() async => _storage.read(key: 'access_token');
   Future<String?> getRefreshToken() async => _storage.read(key: 'refresh_token');
+
+  Dio get dio => _dio;
 
   // Private helpers
   Future<Response> _postWithClient(String path, Map<String, dynamic> data) async {

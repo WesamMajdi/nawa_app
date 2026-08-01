@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:nawa_flutter/core/constants/constants.dart';
-import 'package:nawa_flutter/core/helper/extension.dart';
-import 'package:nawa_flutter/features/profile/profile_screen.dart';
+import 'dart:math';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../core/blocs/auth/auth_bloc.dart';
+import '../../core/constants/constants.dart';
+import '../../core/helper/extension.dart';
+import '../../core/models/user_model.dart';
+import '../../features/auth/login/login_screen.dart';
+import '../../features/profile/profile_screen.dart';
 
 class AccountSettingsScreen extends StatefulWidget {
   const AccountSettingsScreen({super.key});
@@ -26,7 +31,32 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
               bottom: AppSpacing.stackLG,
             ),
             children: [
-              _ProfileSection(),
+              BlocBuilder<AuthBloc, AuthState>(
+                builder: (context, state) {
+                  if (state is AuthLoading) {
+                    return _ProfileShimmer();
+                  }
+                  if (state is AuthAuthenticated) {
+                    final user = state.result?.user;
+                    if (user != null) {
+                      return _ProfileSection(user: user);
+                    }
+                  }
+                  if (state is AuthError) {
+                    return Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text(
+                        state.message,
+                        style: AppTypography.bodyMD.copyWith(
+                          color: AppColors.error,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    );
+                  }
+                  return _ProfileSection(user: null);
+                },
+              ),
               const SizedBox(height: AppSpacing.stackMD),
               const _SettingsLinks(),
               const SizedBox(height: AppSpacing.stackMD),
@@ -48,6 +78,56 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
             ],
           ),
           _TopBar(),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProfileShimmer extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        color: AppColors.surfaceContainerHigh.withAlpha(76),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: AppColors.surfaceVariant.withAlpha(76),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.gutter),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 120,
+                  height: 16,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(4),
+                    color: AppColors.surfaceVariant.withAlpha(76),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  width: 160,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(4),
+                    color: AppColors.surfaceVariant.withAlpha(51),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -92,6 +172,10 @@ class _TopBar extends StatelessWidget {
 }
 
 class _ProfileSection extends StatelessWidget {
+  final UserModel? user;
+
+  const _ProfileSection({this.user});
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -112,32 +196,52 @@ class _ProfileSection extends StatelessWidget {
                 shape: BoxShape.circle,
                 color: AppColors.surfaceVariant,
               ),
-              child: ClipOval(
-                child: Image.network(
-                  'https://lh3.googleusercontent.com/aida-public/AB6AXuDeFueL4009Sb_zQzuhT7kKNtwZjjtilZgjCaGGFwWtmO5go5If2TaQaS9sNUBCPwl4Qq2aZLncH3hhJx28ZBepmu43ldPaXvAOe-lOBbopaptuE1rMVgn6bsNtyyeFzQD_ncMJS2mltQnUlimNgzbj2P0Qh1oQOzC3Cxuo38RoLh8lsqyJ8o2BqMHU-OkiNTAlyW3ZOXkSSpuDhXUwXXizyouX_uVQ5ThSHIKll1FxSmogbiGCFQ3CBW11uq6I0v7cLcVzAtE2rw',
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                    color: AppColors.surfaceVariant,
-                    child: const Icon(Icons.person, size: 32, color: AppColors.onSurfaceVariant),
-                  ),
-                ),
-              ),
+              child: user?.avatarUrl != null
+                  ? ClipOval(
+                      child: Image.network(
+                        user!.avatarUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => _buildInitials(user),
+                      ),
+                    )
+                  : _buildInitials(user),
             ),
             const SizedBox(width: AppSpacing.gutter),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('أحمد مطور', style: AppTypography.headlineMD),
                   Text(
-                    'ahmed@nawah.dev',
-                    style: AppTypography.bodyMD.copyWith(color: AppColors.onSurfaceVariant),
+                    user?.name ?? 'مستخدم',
+                    style: AppTypography.headlineMD,
+                  ),
+                  Text(
+                    user?.email ?? '',
+                    style: AppTypography.bodyMD.copyWith(
+                      color: AppColors.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
             ),
             const Icon(Icons.edit, color: AppColors.primary),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInitials(UserModel? user) {
+    final initials = user?.initials ??
+        (user?.name.isNotEmpty == true
+            ? user!.name.substring(0, min(2, user.name.length))
+            : '?');
+    return Center(
+      child: Text(
+        initials,
+        style: AppTypography.headlineMD.copyWith(
+          color: AppColors.onSurfaceVariant,
+          fontWeight: FontWeight.bold,
         ),
       ),
     );
@@ -318,7 +422,8 @@ class _LogoutButton extends StatelessWidget {
                 TextButton(
                   onPressed: () {
                     Navigator.pop(ctx);
-                    context.pushAndRemoveUntil(const AccountSettingsScreen());
+                    context.read<AuthBloc>().add(AuthLogoutRequested());
+                    context.pushAndRemoveUntil(const LoginScreen());
                   },
                   child: Text(
                     'تسجيل الخروج',

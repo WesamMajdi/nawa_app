@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nawa_flutter/core/constants/constants.dart';
+import 'package:nawa_flutter/core/models/user_model.dart';
+import 'package:nawa_flutter/core/models/user_models.dart';
+import 'package:nawa_flutter/core/repositories/user_repository.dart';
 import 'package:nawa_flutter/core/widgets/app_bottom_nav.dart';
 import 'package:nawa_flutter/core/widgets/app_drawer.dart';
-import 'package:nawa_flutter/features/notifications/notifications_screen.dart';
+import 'package:go_router/go_router.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -14,6 +18,44 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   int _selectedTab = 0;
   final _tabs = ['إنجازاتي', 'مساراتي', 'منشوراتي'];
+  UserModel? _user;
+  List<BadgeModel> _badges = [];
+  List<SkillModel> _skills = [];
+  List<UserLearningModel> _learning = [];
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    try {
+      final repo = context.read<UserRepository>();
+      final results = await Future.wait([
+        repo.getMe(),
+        repo.getBadges(),
+        repo.getSkills(),
+        repo.getLearning(),
+      ]);
+      if (!mounted) return;
+      setState(() {
+        _user = results[0] as UserModel;
+        _badges = results[1] as List<BadgeModel>;
+        _skills = results[2] as List<SkillModel>;
+        _learning = results[3] as List<UserLearningModel>;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'حدث خطأ في تحميل الملف الشخصي';
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,32 +63,64 @@ class _ProfileScreenState extends State<ProfileScreen> {
       drawer: const AppDrawer(),
       body: Stack(
         children: [
-          ListView(
-            padding: const EdgeInsets.only(
-              left: AppSpacing.containerMargin,
-              right: AppSpacing.containerMargin,
-              top: 72,
-              bottom: 100,
-            ),
-            children: [
-              const _ProfileHeader(),
-              const SizedBox(height: AppSpacing.stackLG),
-              const _StatsGrid(),
-              const SizedBox(height: AppSpacing.stackLG),
-              _TabSection(
-                tabs: _tabs,
-                selectedTab: _selectedTab,
-                onTabChanged: (i) => setState(() => _selectedTab = i),
+          if (_isLoading)
+            const Center(child: CircularProgressIndicator())
+          else if (_error != null)
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(_error!, style: AppTypography.bodyMD),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: _loadData,
+                    child: const Text('إعادة المحاولة'),
+                  ),
+                ],
               ),
-              const SizedBox(height: AppSpacing.gutter),
-              const _AchievementsList(),
-              const SizedBox(height: 24),
-            ],
-          ),
+            )
+          else
+            _buildBody(),
           const _TopBar(),
           AppBottomNav(currentTab: NavTab.profile),
         ],
       ),
+    );
+  }
+
+  Widget _buildBody() {
+    final user = _user!;
+    return ListView(
+      padding: const EdgeInsets.only(
+        left: AppSpacing.containerMargin,
+        right: AppSpacing.containerMargin,
+        top: 72,
+        bottom: 100,
+      ),
+      children: [
+        _ProfileHeader(user: user, skills: _skills),
+        const SizedBox(height: AppSpacing.stackLG),
+        _StatsGrid(
+          level: user.level,
+          streakDays: user.streakDays,
+          xp: user.xp,
+          achievementsCount: _badges.length,
+        ),
+        const SizedBox(height: AppSpacing.stackLG),
+        _TabSection(
+          tabs: _tabs,
+          selectedTab: _selectedTab,
+          onTabChanged: (i) => setState(() => _selectedTab = i),
+        ),
+        const SizedBox(height: AppSpacing.gutter),
+        if (_selectedTab == 0)
+          _AchievementsList(badges: _badges)
+        else if (_selectedTab == 1 && _learning.isNotEmpty)
+          _LearningList(learning: _learning)
+        else
+          const SizedBox.shrink(),
+        const SizedBox(height: 24),
+      ],
     );
   }
 }
@@ -76,10 +150,7 @@ class _TopBar extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               GestureDetector(
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const NotificationsScreen()),
-                ),
+                onTap: () => context.push('/notifications'),
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
@@ -108,7 +179,10 @@ class _TopBar extends StatelessWidget {
 }
 
 class _ProfileHeader extends StatelessWidget {
-  const _ProfileHeader();
+  final UserModel user;
+  final List<SkillModel> skills;
+
+  const _ProfileHeader({required this.user, required this.skills});
 
   @override
   Widget build(BuildContext context) {
@@ -141,9 +215,12 @@ class _ProfileHeader extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _AvatarSection(),
+                  _AvatarSection(
+                    avatarUrl: user.avatarUrl,
+                    initials: user.initials,
+                  ),
                   const SizedBox(width: AppSpacing.stackMD),
-                  Expanded(child: _UserInfo()),
+                  Expanded(child: _UserInfo(user: user, skills: skills)),
                 ],
               ),
               const SizedBox(height: AppSpacing.stackMD),
@@ -195,6 +272,11 @@ class _ProfileHeader extends StatelessWidget {
 }
 
 class _AvatarSection extends StatelessWidget {
+  final String? avatarUrl;
+  final String? initials;
+
+  const _AvatarSection({this.avatarUrl, this.initials});
+
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -207,14 +289,13 @@ class _AvatarSection extends StatelessWidget {
             border: Border.all(color: AppColors.primaryContainer, width: 2),
           ),
           child: ClipOval(
-            child: Image.network(
-              'https://lh3.googleusercontent.com/aida-public/AB6AXuBsCFhP-YWecHirccA5vUog_GViK9EnNCNRhVSyDAoVnAHJNJ_zNH2sM6Kob_Jspr58UA_OfSHIZZ0L0O8QAGa2gyMkYXYTKcmmQ3G4n2b8h5iEn-EF7TlmjI2l8qbXN4AbkTOHID08xjUL4WDkH90t9Tw9z5TjUSahupTNJUAxo1rks6jo3XHTol-UMVvWgvdySuSea5r1bx1t4_u5GfmOgbZg1Rzdt9wVwegbRka5ILnIGRZCa61puaTrdFNKeODVRIwEsXN0Aw',
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
-                color: AppColors.surfaceContainerHigh,
-                child: const Icon(Icons.person, size: 48, color: AppColors.onSurfaceVariant),
-              ),
-            ),
+            child: avatarUrl != null
+                ? Image.network(
+                    avatarUrl!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => _buildFallback(),
+                  )
+                : _buildFallback(),
           ),
         ),
         Positioned(
@@ -233,44 +314,76 @@ class _AvatarSection extends StatelessWidget {
       ],
     );
   }
+
+  Widget _buildFallback() {
+    return Container(
+      color: AppColors.surfaceContainerHigh,
+      alignment: Alignment.center,
+      child: Text(
+        initials ?? '?',
+        style: const TextStyle(
+          fontSize: 36,
+          color: AppColors.onSurfaceVariant,
+        ),
+      ),
+    );
+  }
 }
 
 class _UserInfo extends StatelessWidget {
+  final UserModel user;
+  final List<SkillModel> skills;
+
+  const _UserInfo({required this.user, required this.skills});
+
   @override
   Widget build(BuildContext context) {
+    final handleAndJob = StringBuffer();
+    if (user.handle != null) {
+      handleAndJob.write('@${user.handle}');
+    }
+    if (user.handle != null && user.jobTitle != null) {
+      handleAndJob.write(' • ');
+    }
+    if (user.jobTitle != null) {
+      handleAndJob.write(user.jobTitle);
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'أحمد عبدالله',
+          user.name,
           style: AppTypography.headlineXL.copyWith(color: AppColors.primaryFixed),
         ),
-        const SizedBox(height: 4),
-        Text(
-          '@ahmed_dev • Full Stack Engineer',
-          style: AppTypography.labelMD.copyWith(
-            color: AppColors.onSurfaceVariant,
-            fontFamily: AppTypography.fontMono,
-            fontSize: 12,
+        if (handleAndJob.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Text(
+            handleAndJob.toString(),
+            style: AppTypography.labelMD.copyWith(
+              color: AppColors.onSurfaceVariant,
+              fontFamily: AppTypography.fontMono,
+              fontSize: 12,
+            ),
           ),
-        ),
-        const SizedBox(height: AppSpacing.stackMD),
-        Text(
-          'مطور مهتم بتقنيات الويب الحديثة والذكاء الاصطناعي. أبني تطبيقات عالية الأداء وأساهم في المصادر المفتوحة.',
-          style: AppTypography.bodyMD.copyWith(
-            color: AppColors.onSurface.withAlpha(204),
+        ],
+        if (user.bio != null) ...[
+          const SizedBox(height: AppSpacing.stackMD),
+          Text(
+            user.bio!,
+            style: AppTypography.bodyMD.copyWith(
+              color: AppColors.onSurface.withAlpha(204),
+            ),
           ),
-        ),
-        const SizedBox(height: AppSpacing.stackMD),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            _TechTag(label: 'Python'),
-            _TechTag(label: 'React'),
-            _TechTag(label: 'Flutter'),
-          ],
-        ),
+        ],
+        if (skills.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.stackMD),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: skills.map((s) => _TechTag(label: s.name)).toList(),
+          ),
+        ],
       ],
     );
   }
@@ -302,19 +415,57 @@ class _TechTag extends StatelessWidget {
 }
 
 class _StatsGrid extends StatelessWidget {
-  const _StatsGrid();
+  final int level;
+  final int streakDays;
+  final int xp;
+  final int achievementsCount;
+
+  const _StatsGrid({
+    required this.level,
+    required this.streakDays,
+    required this.xp,
+    required this.achievementsCount,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Row(
-      children: const [
-        Expanded(child: _StatItem(icon: Icons.military_tech, color: AppColors.primary, value: 'Lv. 42', label: 'المستوى')),
-        SizedBox(width: AppSpacing.gutter),
-        Expanded(child: _StatItem(icon: Icons.local_fire_department, color: AppColors.secondary, value: '14', label: 'يوم متتالي')),
-        SizedBox(width: AppSpacing.gutter),
-        Expanded(child: _StatItem(icon: Icons.terminal, color: AppColors.tertiaryContainer, value: '8,450', label: 'XP')),
-        SizedBox(width: AppSpacing.gutter),
-        Expanded(child: _StatItem(icon: Icons.workspace_premium, color: AppColors.primaryFixedDim, value: '7', label: 'إنجازات')),
+      children: [
+        Expanded(
+          child: _StatItem(
+            icon: Icons.military_tech,
+            color: AppColors.primary,
+            value: 'Lv. $level',
+            label: 'المستوى',
+          ),
+        ),
+        const SizedBox(width: AppSpacing.gutter),
+        Expanded(
+          child: _StatItem(
+            icon: Icons.local_fire_department,
+            color: AppColors.secondary,
+            value: '$streakDays',
+            label: 'يوم متتالي',
+          ),
+        ),
+        const SizedBox(width: AppSpacing.gutter),
+        Expanded(
+          child: _StatItem(
+            icon: Icons.terminal,
+            color: AppColors.tertiaryContainer,
+            value: '$xp',
+            label: 'XP',
+          ),
+        ),
+        const SizedBox(width: AppSpacing.gutter),
+        Expanded(
+          child: _StatItem(
+            icon: Icons.workspace_premium,
+            color: AppColors.primaryFixedDim,
+            value: '$achievementsCount',
+            label: 'إنجازات',
+          ),
+        ),
       ],
     );
   }
@@ -410,28 +561,38 @@ class _TabSection extends StatelessWidget {
 }
 
 class _AchievementsList extends StatelessWidget {
-  const _AchievementsList();
+  final List<BadgeModel> badges;
+
+  const _AchievementsList({required this.badges});
+
+  Color _parseColor(String hex) {
+    final h = hex.replaceFirst('#', '');
+    return Color(int.parse('FF$h', radix: 16));
+  }
 
   @override
   Widget build(BuildContext context) {
-    return const Column(
-      children: [
-        _AchievementCard(
-          icon: Icons.bug_report,
-          color: AppColors.primary,
-          title: 'صائد الثغرات الأول',
-          subtitle: 'حل 50 تحدي في أمن المعلومات.',
-          progress: 1.0,
+    if (badges.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: Text('لا توجد إنجازات بعد', style: AppTypography.bodyMD),
         ),
-        SizedBox(height: AppSpacing.gutter),
-        _AchievementCard(
-          icon: Icons.rocket_launch,
-          color: AppColors.secondary,
-          title: 'مُطلق المشاريع',
-          subtitle: 'إكمال 5 مسارات برمجية كاملة.',
-          progress: 0.8,
-        ),
-      ],
+      );
+    }
+    return Column(
+      children: badges.map((badge) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.gutter),
+          child: _AchievementCard(
+            icon: Icons.workspace_premium,
+            color: _parseColor(badge.color),
+            title: badge.name,
+            subtitle: badge.unlocked ? 'تم الإنجاز ✓' : 'لم يتم بعد',
+            progress: badge.unlocked ? 1.0 : 0.0,
+          ),
+        );
+      }).toList(),
     );
   }
 }
@@ -503,4 +664,51 @@ class _AchievementCard extends StatelessWidget {
   }
 }
 
+class _LearningList extends StatelessWidget {
+  final List<UserLearningModel> learning;
 
+  const _LearningList({required this.learning});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: learning.map((l) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.gutter),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppRadius.xl),
+              color: AppColors.surfaceContainerHigh.withAlpha(153),
+              border: Border.all(color: AppColors.onSurfaceVariant.withAlpha(12)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(l.title, style: AppTypography.headlineMD),
+                const SizedBox(height: 8),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(AppRadius.full),
+                  child: LinearProgressIndicator(
+                    value: l.progressPct / 100.0,
+                    minHeight: 8,
+                    backgroundColor: AppColors.surfaceVariant,
+                    valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${l.lessonsDone}/${l.lessonsTotal} درس',
+                  style: AppTypography.labelMD.copyWith(
+                    color: AppColors.onSurfaceVariant,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+}

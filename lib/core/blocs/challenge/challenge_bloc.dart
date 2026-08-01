@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../../models/challenge_model.dart';
 import '../../repositories/challenge_repository.dart';
+import '../../network/api_exceptions.dart';
 
 // Events
 sealed class ChallengeEvent extends Equatable {
@@ -105,7 +106,13 @@ class ChallengeBloc extends Bloc<ChallengeEvent, ChallengeState> {
         cursor: result.pageInfo.nextCursor,
       ));
     } catch (e) {
-      emit(ChallengeError(e.toString()));
+      String message;
+      if (e is ApiException) {
+        message = e.toUserMessage();
+      } else {
+        message = 'حدث خطأ غير متوقع';
+      }
+      emit(ChallengeError(message));
     }
   }
 
@@ -122,8 +129,8 @@ class ChallengeBloc extends Bloc<ChallengeEvent, ChallengeState> {
         hasMore: result.pageInfo.hasNext,
         cursor: result.pageInfo.nextCursor,
       ));
-    } catch (e) {
-      emit(ChallengeError(e.toString()));
+    } catch (_) {
+      emit(current);
     }
   }
 
@@ -133,11 +140,18 @@ class ChallengeBloc extends Bloc<ChallengeEvent, ChallengeState> {
       final challenge = await _repository.getChallenge(event.id);
       emit(ChallengeDetailLoaded(challenge));
     } catch (e) {
-      emit(ChallengeError(e.toString()));
+      String message;
+      if (e is ApiException) {
+        message = e.toUserMessage();
+      } else {
+        message = 'حدث خطأ غير متوقع';
+      }
+      emit(ChallengeError(message));
     }
   }
 
   Future<void> _onSubmit(ChallengeSubmitRequested event, Emitter<ChallengeState> emit) async {
+    emit(ChallengeLoading());
     try {
       final result = await _repository.submitChallenge(
         id: event.id,
@@ -146,7 +160,13 @@ class ChallengeBloc extends Bloc<ChallengeEvent, ChallengeState> {
       );
       emit(ChallengeSubmitted(result));
     } catch (e) {
-      emit(ChallengeError(e.toString()));
+      String message;
+      if (e is ApiException) {
+        message = e.toUserMessage();
+      } else {
+        message = 'حدث خطأ غير متوقع';
+      }
+      emit(ChallengeError(message));
     }
   }
 }

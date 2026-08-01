@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../../models/post_model.dart';
 import '../../repositories/community_repository.dart';
+import '../../network/api_exceptions.dart';
 
 // Events
 sealed class CommunityEvent extends Equatable {
@@ -103,7 +104,13 @@ class CommunityBloc extends Bloc<CommunityEvent, CommunityState> {
         cursor: posts.pageInfo.nextCursor,
       ));
     } catch (e) {
-      emit(CommunityError(e.toString()));
+      String message;
+      if (e is ApiException) {
+        message = e.toUserMessage();
+      } else {
+        message = 'حدث خطأ غير متوقع';
+      }
+      emit(CommunityError(message));
     }
   }
 
@@ -122,12 +129,13 @@ class CommunityBloc extends Bloc<CommunityEvent, CommunityState> {
         hasMore: posts.pageInfo.hasNext,
         cursor: posts.pageInfo.nextCursor,
       ));
-    } catch (e) {
-      emit(CommunityError(e.toString()));
+    } catch (_) {
+      emit(current);
     }
   }
 
   Future<void> _onLoadTrending(CommunityLoadTrending event, Emitter<CommunityState> emit) async {
+    emit(CommunityLoading());
     try {
       final trending = await _repository.getTrendingTopics();
       final current = state;
@@ -139,10 +147,19 @@ class CommunityBloc extends Bloc<CommunityEvent, CommunityState> {
           cursor: current.cursor,
         ));
       }
-    } catch (_) {}
+    } catch (e) {
+      String message;
+      if (e is ApiException) {
+        message = e.toUserMessage();
+      } else {
+        message = 'حدث خطأ غير متوقع';
+      }
+      emit(CommunityError(message));
+    }
   }
 
   Future<void> _onCreatePost(CommunityCreatePost event, Emitter<CommunityState> emit) async {
+    emit(CommunityLoading());
     try {
       await _repository.createPost(
         type: event.type,
@@ -151,11 +168,18 @@ class CommunityBloc extends Bloc<CommunityEvent, CommunityState> {
       );
       add(CommunityLoadPosts());
     } catch (e) {
-      emit(CommunityError(e.toString()));
+      String message;
+      if (e is ApiException) {
+        message = e.toUserMessage();
+      } else {
+        message = 'حدث خطأ غير متوقع';
+      }
+      emit(CommunityError(message));
     }
   }
 
   Future<void> _onToggleLike(CommunityToggleLike event, Emitter<CommunityState> emit) async {
+    emit(CommunityLoading());
     try {
       if (event.isLiked) {
         await _repository.removeLike(event.postId);
@@ -164,7 +188,13 @@ class CommunityBloc extends Bloc<CommunityEvent, CommunityState> {
       }
       add(CommunityLoadPosts());
     } catch (e) {
-      emit(CommunityError(e.toString()));
+      String message;
+      if (e is ApiException) {
+        message = e.toUserMessage();
+      } else {
+        message = 'حدث خطأ غير متوقع';
+      }
+      emit(CommunityError(message));
     }
   }
 }

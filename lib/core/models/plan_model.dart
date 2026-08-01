@@ -35,38 +35,41 @@ class CertificateModel {
 
 class PlanModel {
   final String code;
-  final String tier;
   final String name;
-  final int priceCentsMonthly;
-  final int priceCentsYearly;
+  final int priceCents;
   final String currency;
+  final String billingCycle;
+  final String period;
   final String? tagline;
   final bool isPopular;
+  final bool isCurrent;
   final List<String> features;
 
   PlanModel({
     required this.code,
-    required this.tier,
     required this.name,
-    required this.priceCentsMonthly,
-    required this.priceCentsYearly,
-    required this.currency,
+    required this.priceCents,
+    this.currency = 'usd',
+    this.billingCycle = 'monthly',
+    this.period = 'month',
     this.tagline,
     this.isPopular = false,
-    required this.features,
+    this.isCurrent = false,
+    this.features = const [],
   });
 
   factory PlanModel.fromJson(Map<String, dynamic> json) {
     return PlanModel(
       code: json['code'] as String,
-      tier: json['tier'] as String,
       name: json['name'] as String,
-      priceCentsMonthly: json['priceCentsMonthly'] as int? ?? 0,
-      priceCentsYearly: json['priceCentsYearly'] as int? ?? 0,
+      priceCents: json['priceCents'] as int? ?? 0,
       currency: json['currency'] as String? ?? 'usd',
+      billingCycle: json['billingCycle'] as String? ?? 'monthly',
+      period: json['period'] as String? ?? 'month',
       tagline: json['tagline'] as String?,
       isPopular: json['isPopular'] as bool? ?? false,
-      features: (json['features'] as List?)?.map((e) => e.toString()).toList() ?? [],
+      isCurrent: json['isCurrent'] as bool? ?? false,
+      features: (json['features'] as List?)?.map((e) => e.toString()).toList() ?? const [],
     );
   }
 }
@@ -76,12 +79,14 @@ class PlanUsageModel {
   final String tier;
   final String planName;
   final String status;
+  final String? billingCycle;
   final DateTime? renewsAt;
+  final bool cancelAtPeriodEnd;
   final int enrolledPaths;
   final int completedPaths;
   final int certificates;
   final int challengesToday;
-  final int dailyChallengeLimit;
+  final int? dailyChallengeLimit;
   final PlanEntitlements entitlements;
 
   PlanUsageModel({
@@ -89,27 +94,31 @@ class PlanUsageModel {
     required this.tier,
     required this.planName,
     required this.status,
+    this.billingCycle,
     this.renewsAt,
-    required this.enrolledPaths,
-    required this.completedPaths,
-    required this.certificates,
-    required this.challengesToday,
-    required this.dailyChallengeLimit,
+    this.cancelAtPeriodEnd = false,
+    this.enrolledPaths = 0,
+    this.completedPaths = 0,
+    this.certificates = 0,
+    this.challengesToday = 0,
+    this.dailyChallengeLimit,
     required this.entitlements,
   });
 
   factory PlanUsageModel.fromJson(Map<String, dynamic> json) {
     return PlanUsageModel(
       planCode: json['planCode'] as String,
-      tier: json['tier'] as String,
-      planName: json['planName'] as String,
-      status: json['status'] as String,
+      tier: json['tier'] as String? ?? '',
+      planName: json['planName'] as String? ?? '',
+      status: json['status'] as String? ?? '',
+      billingCycle: json['billingCycle'] as String?,
       renewsAt: json['renewsAt'] != null ? DateTime.parse(json['renewsAt']) : null,
+      cancelAtPeriodEnd: json['cancelAtPeriodEnd'] as bool? ?? false,
       enrolledPaths: json['enrolledPaths'] as int? ?? 0,
       completedPaths: json['completedPaths'] as int? ?? 0,
       certificates: json['certificates'] as int? ?? 0,
       challengesToday: json['challengesToday'] as int? ?? 0,
-      dailyChallengeLimit: json['dailyChallengeLimit'] as int? ?? 3,
+      dailyChallengeLimit: json['dailyChallengeLimit'] as int?,
       entitlements: PlanEntitlements.fromJson(json['entitlements'] as Map<String, dynamic>? ?? {}),
     );
   }
@@ -119,13 +128,13 @@ class PlanEntitlements {
   final bool aiTutor;
   final bool proPaths;
   final bool unlimitedChallenges;
-  final int teamSeats;
+  final int? teamSeats;
 
   PlanEntitlements({
     this.aiTutor = false,
     this.proPaths = false,
     this.unlimitedChallenges = false,
-    this.teamSeats = 0,
+    this.teamSeats,
   });
 
   factory PlanEntitlements.fromJson(Map<String, dynamic> json) {
@@ -133,7 +142,7 @@ class PlanEntitlements {
       aiTutor: json['aiTutor'] as bool? ?? false,
       proPaths: json['proPaths'] as bool? ?? false,
       unlimitedChallenges: json['unlimitedChallenges'] as bool? ?? false,
-      teamSeats: json['teamSeats'] as int? ?? 0,
+      teamSeats: json['teamSeats'] as int?,
     );
   }
 }

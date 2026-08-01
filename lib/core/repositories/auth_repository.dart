@@ -46,9 +46,12 @@ class AuthRepository {
   }
 
   Future<void> logout() async {
-    final refreshToken = await _api.getRefreshToken();
-    if (refreshToken != null) {
-      await _api.logout(refreshToken);
+    try {
+      final refreshToken = await _api.getRefreshToken();
+      if (refreshToken != null) {
+        await _api.logout(refreshToken);
+      }
+    } catch (_) {
     }
     await _api.clearTokens();
   }

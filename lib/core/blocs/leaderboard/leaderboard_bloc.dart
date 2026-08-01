@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../../models/leaderboard_model.dart';
 import '../../repositories/leaderboard_repository.dart';
+import '../../network/api_exceptions.dart';
 
 // Events
 sealed class LeaderboardEvent extends Equatable {
@@ -77,7 +78,13 @@ class LeaderboardBloc extends Bloc<LeaderboardEvent, LeaderboardState> {
         cursor: result.pageInfo.nextCursor,
       ));
     } catch (e) {
-      emit(LeaderboardError(e.toString()));
+      String message;
+      if (e is ApiException) {
+        message = e.toUserMessage();
+      } else {
+        message = 'حدث خطأ غير متوقع';
+      }
+      emit(LeaderboardError(message));
     }
   }
 
