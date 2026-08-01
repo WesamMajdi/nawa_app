@@ -151,7 +151,7 @@ class _TopBar extends StatelessWidget {
       child: Row(
         children: [
           GestureDetector(
-            onTap: () => Navigator.pop(context),
+            onTap: () => context.go('/challenges'),
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(borderRadius: BorderRadius.circular(AppRadius.full)),
