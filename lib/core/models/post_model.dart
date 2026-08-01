@@ -61,6 +61,29 @@ class PostModel {
       topics: (json['topics'] as List?)?.map((e) => e.toString()).toList(),
     );
   }
+
+  PostModel copyWithLike({required bool liked, required int likesCount}) {
+    return PostModel(
+      id: id,
+      type: type,
+      title: title,
+      body: body,
+      authorId: authorId,
+      authorName: authorName,
+      authorRole: authorRole,
+      authorJobTitle: authorJobTitle,
+      authorAvatarUrl: authorAvatarUrl,
+      authorInitials: authorInitials,
+      authorHandle: authorHandle,
+      likesCount: likesCount,
+      repliesCount: repliesCount,
+      isSolved: isSolved,
+      isLikedByMe: liked,
+      createdAt: createdAt,
+      imageUrls: imageUrls,
+      topics: topics,
+    );
+  }
 }
 
 class TrendingTopicModel {

@@ -66,24 +66,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
       drawer: const AppDrawer(),
       body: Stack(
         children: [
-          if (_isLoading)
-            const Center(child: CircularProgressIndicator())
-          else if (_error != null)
-            Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(_error!, style: AppTypography.bodyMD),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: _loadData,
-                    child: const Text('إعادة المحاولة'),
-                  ),
-                ],
+          CustomScrollView(
+            slivers: [
+              SliverToBoxAdapter(
+                child: _isLoading
+                    ? const SizedBox(
+                        height: 400,
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    : _error != null
+                        ? Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(24),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(_error!, style: AppTypography.bodyMD),
+                                  const SizedBox(height: 16),
+                                  ElevatedButton(
+                                    onPressed: _loadData,
+                                    child: const Text('إعادة المحاولة'),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        : _buildBody(),
               ),
-            )
-          else
-            _buildBody(),
+            ],
+          ),
           const _TopBar(),
           AppBottomNav(currentTab: NavTab.profile),
         ],
@@ -93,39 +104,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildBody() {
     final user = _user!;
-    return ListView(
+    return Padding(
       padding: const EdgeInsets.only(
         left: AppSpacing.containerMargin,
         right: AppSpacing.containerMargin,
-        top: 72,
         bottom: 100,
       ),
-      children: [
-        _ProfileHeader(user: user, skills: _skills),
-        const SizedBox(height: AppSpacing.stackLG),
-        _StatsGrid(
-          level: user.level,
-          streakDays: user.streakDays,
-          xp: user.xp,
-          achievementsCount: _badges.length,
-        ),
-        const SizedBox(height: AppSpacing.stackLG),
-        _TabSection(
-          tabs: _tabs,
-          selectedTab: _selectedTab,
-          onTabChanged: (i) => setState(() => _selectedTab = i),
-        ),
-        const SizedBox(height: AppSpacing.gutter),
-        if (_selectedTab == 0)
-          _AchievementsList(badges: _badges)
-        else if (_selectedTab == 1 && _learning.isNotEmpty)
-          _LearningList(learning: _learning)
-        else if (_selectedTab == 1)
-          const _EmptyLearningList()
-        else
-          const _MyPostsTab(),
-        const SizedBox(height: 24),
-      ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 24),
+          _ProfileHeader(user: user, skills: _skills),
+          const SizedBox(height: AppSpacing.stackLG),
+          _StatsGrid(
+            level: user.level,
+            streakDays: user.streakDays,
+            xp: user.xp,
+            achievementsCount: _badges.length,
+          ),
+          const SizedBox(height: AppSpacing.stackLG),
+          _TabSection(
+            tabs: _tabs,
+            selectedTab: _selectedTab,
+            onTabChanged: (i) => setState(() => _selectedTab = i),
+          ),
+          const SizedBox(height: AppSpacing.gutter),
+          if (_selectedTab == 0)
+            _AchievementsList(badges: _badges)
+          else if (_selectedTab == 1 && _learning.isNotEmpty)
+            _LearningList(learning: _learning)
+          else if (_selectedTab == 1)
+            const _EmptyLearningList()
+          else
+            const _MyPostsTab(),
+          const SizedBox(height: 24),
+        ],
+      ),
     );
   }
 }
@@ -195,78 +209,128 @@ class _ProfileHeader extends StatelessWidget {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppRadius.xl),
-        color: AppColors.surfaceContainerHigh.withAlpha(153),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.primaryContainer.withAlpha(40),
+            AppColors.surfaceContainerHigh.withAlpha(153),
+          ],
+        ),
         border: Border.all(color: AppColors.onSurfaceVariant.withAlpha(12)),
       ),
-      child: Stack(
+      child: Column(
         children: [
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(AppRadius.xl),
-                gradient: LinearGradient(
-                  begin: Alignment.topRight,
-                  end: Alignment.bottomLeft,
-                  colors: [
-                    Colors.white.withAlpha(12),
-                    Colors.transparent,
-                  ],
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              _AvatarSection(
+                avatarUrl: user.avatarUrl,
+                initials: user.initials,
+              ),
+              const SizedBox(width: AppSpacing.stackMD),
+              Expanded(child: _UserInfo(user: user, skills: skills)),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.stackMD),
+          if (user.jobTitle != null || user.bio != null) ...[
+            if (user.jobTitle != null)
+              Row(
+                children: [
+                  Icon(Icons.work_outline, size: 16, color: AppColors.onSurfaceVariant),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      user.jobTitle!,
+                      style: AppTypography.bodyMD.copyWith(
+                        color: AppColors.onSurfaceVariant,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            if (user.jobTitle != null && user.bio != null)
+              const SizedBox(height: AppSpacing.unit),
+            if (user.bio != null)
+              Text(
+                user.bio!,
+                style: AppTypography.bodyMD.copyWith(
+                  color: AppColors.onSurfaceVariant,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            const SizedBox(height: AppSpacing.stackMD),
+          ],
+          if (skills.isNotEmpty) ...[
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: skills.map((s) => _TechTag(label: s.name)).toList(),
+            ),
+            const SizedBox(height: AppSpacing.stackMD),
+          ],
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const EditProfileScreen(),
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: AppColors.background,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
+                    ),
+                    elevation: 0,
+                    textStyle: AppTypography.headlineMD,
+                  ).copyWith(
+                    shadowColor: WidgetStateProperty.all(Colors.transparent),
+                    surfaceTintColor: WidgetStateProperty.all(Colors.transparent),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.edit_outlined, size: 18),
+                      SizedBox(width: 8),
+                      Text('تعديل الملف الشخصي'),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ),
-          Column(
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _AvatarSection(
-                    avatarUrl: user.avatarUrl,
-                    initials: user.initials,
-                  ),
-                  const SizedBox(width: AppSpacing.stackMD),
-                  Expanded(child: _UserInfo(user: user, skills: skills)),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.stackMD),
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () => context.push(const EditProfileScreen()),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primaryContainer,
-                        foregroundColor: AppColors.background,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.lg),
-                        ),
-                        elevation: 0,
-                        textStyle: AppTypography.headlineMD,
-                      ).copyWith(
-                        shadowColor: WidgetStateProperty.all(Colors.transparent),
-                        surfaceTintColor: WidgetStateProperty.all(Colors.transparent),
-                      ),
-                      child: const Text('تعديل'),
+              const SizedBox(width: AppSpacing.gutter),
+              SizedBox(
+                height: 48,
+                child: OutlinedButton(
+                  onPressed: () {},
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    side: BorderSide(color: AppColors.primaryContainer),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
+                    ),
+                    textStyle: AppTypography.headlineMD,
+                  ).copyWith(
+                    padding: WidgetStateProperty.all(
+                      const EdgeInsets.symmetric(horizontal: 16),
                     ),
                   ),
-                  const SizedBox(width: AppSpacing.gutter),
-                  SizedBox(
-                    height: 44,
-                    child: OutlinedButton(
-                      onPressed: () {},
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.primary,
-                        side: const BorderSide(color: AppColors.primaryContainer),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.lg),
-                        ),
-                        textStyle: AppTypography.headlineMD,
-                      ),
-                      child: const Icon(Icons.share, size: 20),
-                    ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.share, size: 18),
+                      SizedBox(width: 8),
+                      Text('مشاركة'),
+                    ],
                   ),
-                ],
+                ),
               ),
             ],
           ),
@@ -287,20 +351,36 @@ class _AvatarSection extends StatelessWidget {
     return Stack(
       children: [
         Container(
-          width: 96,
-          height: 96,
+          width: 110,
+          height: 110,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: AppColors.primaryContainer, width: 2),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                AppColors.primary.withAlpha(80),
+                AppColors.primaryContainer.withAlpha(60),
+              ],
+            ),
           ),
-          child: ClipOval(
-            child: avatarUrl != null
-                ? Image.network(
-                    avatarUrl!,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _buildFallback(),
-                  )
-                : _buildFallback(),
+          child: Padding(
+            padding: const EdgeInsets.all(3),
+            child: Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.primary.withAlpha(40), width: 2),
+              ),
+              child: ClipOval(
+                child: avatarUrl != null
+                    ? Image.network(
+                        avatarUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => _buildFallback(),
+                      )
+                    : _buildFallback(),
+              ),
+            ),
           ),
         ),
         Positioned(
@@ -310,7 +390,7 @@ class _AvatarSection extends StatelessWidget {
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: AppColors.primaryContainer,
+              color: AppColors.primary,
               border: Border.all(color: AppColors.surface, width: 2),
             ),
             child: const Icon(Icons.code, size: 16, color: AppColors.background),
@@ -327,7 +407,7 @@ class _AvatarSection extends StatelessWidget {
       child: Text(
         initials ?? '?',
         style: const TextStyle(
-          fontSize: 36,
+          fontSize: 42,
           color: AppColors.onSurfaceVariant,
         ),
       ),
@@ -434,44 +514,34 @@ class _StatsGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _StatItem(
-            icon: Icons.military_tech,
-            color: AppColors.primary,
-            value: 'Lv. $level',
-            label: 'المستوى',
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        color: AppColors.surfaceContainerHigh.withAlpha(153),
+        border: Border.all(color: AppColors.onSurfaceVariant.withAlpha(12)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _StatItem(
+              icon: Icons.military_tech,
+              color: AppColors.primary,
+              value: 'Lv. $level',
+              label: 'المستوى',
+            ),
           ),
-        ),
-        const SizedBox(width: AppSpacing.gutter),
-        Expanded(
-          child: _StatItem(
-            icon: Icons.local_fire_department,
-            color: AppColors.secondary,
-            value: '$streakDays',
-            label: 'يوم متتالي',
+          const SizedBox(width: AppSpacing.gutter),
+          Expanded(
+            child: _StatItem(
+              icon: Icons.local_fire_department,
+              color: AppColors.secondary,
+              value: '$streakDays',
+              label: 'يوم متتالي',
+            ),
           ),
-        ),
-        const SizedBox(width: AppSpacing.gutter),
-        Expanded(
-          child: _StatItem(
-            icon: Icons.terminal,
-            color: AppColors.tertiaryContainer,
-            value: '$xp',
-            label: 'XP',
-          ),
-        ),
-        const SizedBox(width: AppSpacing.gutter),
-        Expanded(
-          child: _StatItem(
-            icon: Icons.workspace_premium,
-            color: AppColors.primaryFixedDim,
-            value: '$achievementsCount',
-            label: 'إنجازات',
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -492,25 +562,35 @@ class _StatItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        color: AppColors.surfaceContainerHigh.withAlpha(153),
-        border: Border.all(color: AppColors.onSurfaceVariant.withAlpha(12)),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        color: color.withAlpha(10),
+        border: Border.all(color: color.withAlpha(25)),
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: Row(
         children: [
-          Icon(icon, color: color, size: 32),
-          const SizedBox(height: AppSpacing.stackSM),
-          Text(value, style: AppTypography.headlineLG),
-          Text(
-            label,
-            style: AppTypography.labelMD.copyWith(
-              color: AppColors.onSurfaceVariant,
-              fontSize: 10,
+          Icon(icon, color: color, size: 24),
+          const SizedBox(width: AppSpacing.stackSM),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  value,
+                  style: AppTypography.headlineMD.copyWith(
+                    color: color,
+                  ),
+                ),
+                Text(
+                  label,
+                  style: AppTypography.labelMD.copyWith(
+                    color: AppColors.onSurfaceVariant,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
             ),
-            textAlign: TextAlign.center,
           ),
         ],
       ),
@@ -518,7 +598,7 @@ class _StatItem extends StatelessWidget {
   }
 }
 
-class _TabSection extends StatelessWidget {
+class _TabSection extends StatefulWidget {
   final List<String> tabs;
   final int selectedTab;
   final ValueChanged<int> onTabChanged;
@@ -530,31 +610,67 @@ class _TabSection extends StatelessWidget {
   });
 
   @override
+  State<_TabSection> createState() => _TabSectionState();
+}
+
+class _TabSectionState extends State<_TabSection> {
+  late final List<GlobalKey> _tabKeys;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabKeys = List.generate(widget.tabs.length, (_) => GlobalKey());
+  }
+
+  @override
+  void didUpdateWidget(covariant _TabSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.tabs.length != widget.tabs.length) {
+      _tabKeys = List.generate(widget.tabs.length, (_) => GlobalKey());
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Container(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.containerMargin),
       decoration: BoxDecoration(
+        color: AppColors.surfaceContainerHigh.withAlpha(80),
         border: Border(
-          bottom: BorderSide(color: AppColors.surfaceVariant),
+          bottom: BorderSide(color: AppColors.onSurfaceVariant.withAlpha(12)),
         ),
       ),
       child: Row(
-        children: List.generate(tabs.length, (i) {
-          final isSelected = i == selectedTab;
-          return GestureDetector(
-            onTap: () => onTabChanged(i),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              decoration: isSelected
-                  ? const BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(color: AppColors.primary, width: 2),
+        children: List.generate(widget.tabs.length, (i) {
+          final isSelected = i == widget.selectedTab;
+          return Expanded(
+            child: GestureDetector(
+              key: _tabKeys[i],
+              onTap: () => widget.onTabChanged(i),
+              behavior: HitTestBehavior.opaque,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      widget.tabs[i],
+                      style: AppTypography.headlineMD.copyWith(
+                        color: isSelected ? AppColors.primary : AppColors.onSurfaceVariant,
+                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w400,
                       ),
-                    )
-                  : null,
-              child: Text(
-                tabs[i],
-                style: AppTypography.headlineMD.copyWith(
-                  color: isSelected ? AppColors.primary : AppColors.onSurfaceVariant,
+                    ),
+                    const SizedBox(height: 6),
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      height: isSelected ? 3 : 0,
+                      width: isSelected ? 32 : 0,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary,
+                        borderRadius: BorderRadius.circular(AppRadius.full),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -623,8 +739,15 @@ class _AchievementCard extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppRadius.xl),
-        color: AppColors.surfaceContainerHigh.withAlpha(153),
-        border: Border.all(color: AppColors.onSurfaceVariant.withAlpha(12)),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            color.withAlpha(8),
+            Colors.transparent,
+          ],
+        ),
+        border: Border.all(color: color.withAlpha(20)),
       ),
       child: Row(
         children: [
@@ -632,7 +755,14 @@ class _AchievementCard extends StatelessWidget {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(AppRadius.lg),
-              color: color.withAlpha(25),
+              color: color.withAlpha(20),
+              boxShadow: [
+                BoxShadow(
+                  color: color.withAlpha(15),
+                  blurRadius: 12,
+                  spreadRadius: 0,
+                ),
+              ],
             ),
             child: Icon(icon, color: color, size: 24),
           ),
@@ -819,7 +949,14 @@ class _MyPostCard extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppRadius.xl),
-        color: AppColors.surfaceContainerHigh.withAlpha(153),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.surfaceContainerHigh.withAlpha(153),
+            AppColors.surfaceContainerHigh.withAlpha(80),
+          ],
+        ),
         border: Border.all(color: AppColors.onSurfaceVariant.withAlpha(12)),
       ),
       child: Column(
@@ -834,7 +971,7 @@ class _MyPostCard extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(AppRadius.full),
-                  color: AppColors.primary.withAlpha(25),
+                  color: AppColors.primary.withAlpha(20),
                 ),
                 child: Text(
                   _typeLabel,
@@ -934,14 +1071,29 @@ class _LearningList extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(AppRadius.xl),
-              color: AppColors.surfaceContainerHigh.withAlpha(153),
-              border: Border.all(color: AppColors.onSurfaceVariant.withAlpha(12)),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  AppColors.primaryContainer.withAlpha(10),
+                  Colors.transparent,
+                ],
+              ),
+              border: Border.all(color: AppColors.primaryContainer.withAlpha(15)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(l.title, style: AppTypography.headlineMD),
-                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(Icons.school_outlined, size: 20, color: AppColors.primary),
+                    const SizedBox(width: AppSpacing.stackSM),
+                    Expanded(
+                      child: Text(l.title, style: AppTypography.headlineMD),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(AppRadius.full),
                   child: LinearProgressIndicator(
@@ -951,7 +1103,7 @@ class _LearningList extends StatelessWidget {
                     valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Text(
                   '${l.lessonsDone}/${l.lessonsTotal} درس',
                   style: AppTypography.labelMD.copyWith(

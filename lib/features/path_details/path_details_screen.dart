@@ -46,7 +46,7 @@ class _PathDetailsScreenState extends State<PathDetailsScreen> {
                 _ => null,
               };
               if (path == null) {
-                return const SizedBox.shrink();
+                return const Center(child: CircularProgressIndicator());
               }
               return _PathContent(path: path);
             },

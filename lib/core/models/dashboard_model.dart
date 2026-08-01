@@ -170,7 +170,7 @@ class DailyChallengeModel {
   factory DailyChallengeModel.fromJson(Map<String, dynamic> json) {
     return DailyChallengeModel(
       id: json['id'] as String,
-      kind: json['kind'] as String,
+      kind: json['kind'] as String? ?? 'challenge',
       category: json['category'] as String,
       title: json['title'] as String,
       description: json['description'] as String?,

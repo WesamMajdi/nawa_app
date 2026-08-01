@@ -103,11 +103,15 @@ class CommunityRepository {
   }
 
   Future<Map<String, dynamic>> toggleLike(String postId) async {
-    final response = await _api.post('${ApiEndpoints.communityPosts}/$postId/like');
+    final response = await _api.post(
+      '${ApiEndpoints.communityPosts}/$postId/like',
+      data: <String, dynamic>{},
+    );
     return response.data;
   }
 
-  Future<void> removeLike(String postId) async {
-    await _api.delete('${ApiEndpoints.communityPosts}/$postId/like');
+  Future<Map<String, dynamic>> removeLike(String postId) async {
+    final response = await _api.delete('${ApiEndpoints.communityPosts}/$postId/like');
+    return response.data;
   }
 }

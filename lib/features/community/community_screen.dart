@@ -524,38 +524,257 @@ class _Fab extends StatelessWidget {
           color: AppColors.surfaceContainerLowest,
           size: 32,
         ),
-        onPressed: () => _showNewPostSheet(context),
+        onPressed: () => showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (_) => const _NewPostSheet(),
+        ),
       ),
     );
   }
+}
 
-  void _showNewPostSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      builder: (ctx) => Container(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'إنشاء منشور جديد',
-              style: AppTypography.headlineMD,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(ctx),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryContainer,
-                foregroundColor: AppColors.background,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
+class _NewPostSheet extends StatefulWidget {
+  const _NewPostSheet();
+
+  @override
+  State<_NewPostSheet> createState() => _NewPostSheetState();
+}
+
+class _NewPostSheetState extends State<_NewPostSheet> {
+  final _titleController = TextEditingController();
+  final _bodyController = TextEditingController();
+  String _type = 'discussion';
+  bool _publishing = false;
+
+  static const _types = <String, String>{
+    'question': 'سؤال',
+    'discussion': 'نقاش',
+    'achievement': 'إنجاز',
+  };
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _bodyController.dispose();
+    super.dispose();
+  }
+
+  void _publish() {
+    final title = _titleController.text.trim();
+    final body = _bodyController.text.trim();
+    if (title.isEmpty || body.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('يرجى إدخال العنوان والنص')),
+      );
+      return;
+    }
+    setState(() => _publishing = true);
+    context.read<CommunityBloc>().add(
+          CommunityCreatePost(
+            type: _type,
+            title: title,
+            body: body,
+          ),
+        );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.viewInsetsOf(context).bottom,
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.stackLG),
+        decoration: const BoxDecoration(
+          color: AppColors.surfaceContainerHigh,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
+        ),
+        child: SingleChildScrollView(
+          child: BlocListener<CommunityBloc, CommunityState>(
+            listener: (context, state) {
+              if (state is CommunityLoaded && _publishing) {
+                _publishing = false;
+                final messenger = ScaffoldMessenger.of(context);
+                Navigator.pop(context);
+                messenger.showSnackBar(
+                  const SnackBar(content: Text('تم نشر المنشور بنجاح')),
+                );
+              } else if (state is CommunityError && _publishing) {
+                setState(() => _publishing = false);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(state.message)),
+                );
+              }
+            },
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      'إنشاء منشور جديد',
+                      style: AppTypography.headlineMD.copyWith(
+                        color: AppColors.onSurface,
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.close,
+                        color: AppColors.onSurfaceVariant,
+                      ),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
                 ),
-              ),
-              child: const Text('إلغاء'),
+                const SizedBox(height: AppSpacing.stackSM),
+                Text(
+                  'نوع المنشور',
+                  style: AppTypography.labelMD.copyWith(
+                    color: AppColors.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.stackSM),
+                Row(
+                  children: _types.entries.map((e) {
+                    final isSelected = _type == e.key;
+                    return Padding(
+                      padding: const EdgeInsets.only(left: 8),
+                      child: GestureDetector(
+                        onTap: () => setState(() => _type = e.key),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(AppRadius.full),
+                            color: isSelected
+                                ? AppColors.primary
+                                : AppColors.surfaceVariant.withAlpha(77),
+                          ),
+                          child: Text(
+                            e.value,
+                            style: AppTypography.labelMD.copyWith(
+                              color: isSelected
+                                  ? AppColors.onPrimary
+                                  : AppColors.onSurfaceVariant,
+                              fontWeight:
+                                  isSelected ? FontWeight.bold : FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: AppSpacing.stackMD),
+                TextField(
+                  controller: _titleController,
+                  textDirection: TextDirection.rtl,
+                  style: AppTypography.bodyMD.copyWith(color: AppColors.onSurface),
+                  decoration: InputDecoration(
+                    labelText: 'العنوان',
+                    labelStyle: AppTypography.labelMD.copyWith(
+                      color: AppColors.onSurfaceVariant,
+                    ),
+                    hintText: 'اكتب عنوان المنشور',
+                    hintStyle: AppTypography.bodyMD.copyWith(
+                      color: AppColors.onSurfaceVariant.withAlpha(128),
+                    ),
+                    filled: true,
+                    fillColor: AppColors.surfaceContainerHighest,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.xl),
+                      borderSide: const BorderSide(color: AppColors.outlineVariant),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.xl),
+                      borderSide: const BorderSide(color: AppColors.outlineVariant),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.xl),
+                      borderSide:
+                          const BorderSide(color: AppColors.primary, width: 1.5),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      vertical: 14,
+                      horizontal: 16,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.stackMD),
+                TextField(
+                  controller: _bodyController,
+                  textDirection: TextDirection.rtl,
+                  style: AppTypography.bodyMD.copyWith(color: AppColors.onSurface),
+                  maxLines: 6,
+                  minLines: 4,
+                  decoration: InputDecoration(
+                    labelText: 'النص',
+                    labelStyle: AppTypography.labelMD.copyWith(
+                      color: AppColors.onSurfaceVariant,
+                    ),
+                    hintText: 'اكتب تفاصيل المنشور...',
+                    hintStyle: AppTypography.bodyMD.copyWith(
+                      color: AppColors.onSurfaceVariant.withAlpha(128),
+                    ),
+                    alignLabelWithHint: true,
+                    filled: true,
+                    fillColor: AppColors.surfaceContainerHighest,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.xl),
+                      borderSide: const BorderSide(color: AppColors.outlineVariant),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.xl),
+                      borderSide: const BorderSide(color: AppColors.outlineVariant),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.xl),
+                      borderSide:
+                          const BorderSide(color: AppColors.primary, width: 1.5),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      vertical: 14,
+                      horizontal: 16,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.stackLG),
+                ElevatedButton(
+                  onPressed: _publishing ? null : _publish,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: AppColors.onPrimary,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.xl),
+                    ),
+                    elevation: 0,
+                    textStyle: AppTypography.headlineMD,
+                  ).copyWith(
+                    shadowColor: WidgetStateProperty.all(Colors.transparent),
+                    surfaceTintColor: WidgetStateProperty.all(Colors.transparent),
+                  ),
+                  child: _publishing
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: AppColors.onPrimary,
+                          ),
+                        )
+                      : const Text('نشر المنشور'),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

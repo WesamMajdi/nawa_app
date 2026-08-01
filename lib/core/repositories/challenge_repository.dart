@@ -2,14 +2,13 @@ import '../models/challenge_model.dart';
 import '../models/dashboard_model.dart';
 import '../network/api_client.dart';
 import '../network/api_endpoints.dart';
-import '../network/api_response.dart';
 
 class ChallengeRepository {
   final ApiClient _api;
 
   ChallengeRepository(this._api);
 
-  Future<PaginatedResponse<ChallengeModel>> getFeed({
+  Future<List<ChallengeModel>> getFeed({
     String? category,
     String? cursor,
     int limit = 20,
@@ -19,11 +18,9 @@ class ChallengeRepository {
     if (cursor != null) params['cursor'] = cursor;
 
     final response = await _api.get(ApiEndpoints.challengesFeed, queryParameters: params);
-    final data = response.data;
-    return PaginatedResponse(
-      items: (data['items'] as List).map((e) => ChallengeModel.fromJson(e)).toList(),
-      pageInfo: PageInfo.fromJson(data['pageInfo']),
-    );
+    return (response.data as List)
+        .map((e) => ChallengeModel.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   Future<ChallengeDetailModel> getChallenge(String id) async {
